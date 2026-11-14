@@ -32,24 +32,38 @@ function create() {
   window.addEventListener('keydown', down); window.addEventListener('keyup', up);
   s.events.once('shutdown', () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); });
   s.phase = 'title'; s.players = [[], []]; s.possession = 0; s.scores = [0, 0]; s.turnoverUntil = 0; s.pass = null; s.twoPlayers = false; s.cpuThrowAt = 0;
+  s.stadiumArt = s.add.graphics().setDepth(-2); drawStadium(s);
   s.fieldArt = s.add.graphics(); s.fieldMarks = []; drawField(s);
   s.fieldMarks.forEach(mark => mark.setVisible(false));
   s.cameras.main.setBounds(0, 0, WORLD, H).setScroll(WORLD / 2 - W / 2, 0);
-  s.hud = s.add.text(W / 2, 18, '', { fontFamily: 'monospace', fontSize: '17px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5, 0).setScrollFactor(0).setDepth(20);
-  s.help = s.add.text(W / 2, H - 16, '', { fontFamily: 'monospace', fontSize: '12px', color: '#d9e8c8', align: 'center' }).setOrigin(.5, 1).setScrollFactor(0).setDepth(20);
-  s.titleTag = s.add.text(W / 2, 112, 'PLATANUS PRESENTS', { fontFamily: 'monospace', fontSize: '16px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.title = s.add.text(W / 2, 228, 'PLATANANA\nBOWL', { fontFamily: 'monospace', fontSize: '65px', color: '#fff4cf', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 8 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.tagline = s.add.text(W / 2, 330, 'RUN. PASS. STEAL THE BANANA.', { fontFamily: 'monospace', fontSize: '17px', color: '#bce5bd', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.modeText = s.add.text(W / 2, 388, '1 PLAYER: P1 VS CPU     •     2 PLAYERS: P1 VS P2', { fontFamily: 'monospace', fontSize: '13px', color: '#fff4cf', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.prompt = s.add.text(W / 2, 476, 'PRESS START  •  ENTER', { fontFamily: 'monospace', fontSize: '20px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.help.setText('MOVE: WASD / ARROWS     PASS: U / R     LONG PASS: O / Y     JUKE / TACKLE: I / T');
+  s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
+  drawHudPlate(s.hudArt);
+  s.hudLeft = s.add.text(224, 40, 'P1', { fontFamily: 'monospace', fontSize: '12px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudRight = s.add.text(576, 40, 'CPU', { fontFamily: 'monospace', fontSize: '12px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hud = s.add.text(W / 2, 38, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '27px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudStatus = s.add.text(W / 2, 60, '', { fontFamily: 'monospace', fontSize: '9px', color: '#c1d9c5', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  [s.hudArt, s.hudLeft, s.hudRight, s.hud, s.hudStatus].forEach(item => item.setVisible(false));
+  s.helpPlate = s.add.graphics().setScrollFactor(0).setDepth(19);
+  s.helpPlate.fillStyle(C.ink, .9).fillRect(133, 548, 534, 39);
+  s.helpPlate.lineStyle(1, C.lime, .45).strokeRect(133, 548, 534, 39);
+  s.help = s.add.text(W / 2, 568, '', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.titleArt = s.add.graphics().setScrollFactor(0).setDepth(18);
+  drawTitlePlate(s.titleArt);
+  s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.title = s.add.text(137, 205, 'PLATA', { fontFamily: 'Arial Black, sans-serif', fontSize: '52px', color: '#fff4cf', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.titleAccent = s.add.text(137, 267, 'NANA BOWL', { fontFamily: 'Arial Black, sans-serif', fontSize: '47px', color: '#e1ff00', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.tagline = s.add.text(142, 326, 'RUN IT. AIR IT. TAKE THE BANANA.', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.prompt = s.add.text(142, 446, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.titleBanana = makeBanana(s, 572, 295, 2.2).setRotation(-.28).setScrollFactor(0).setDepth(20);
+  s.help.setText('MOVE WASD  ·  PASS U  ·  LONG PASS O  ·  JUKE I');
   s.cameras.main.setFollowOffset(0, 0);
 }
 
 function update(time, delta) {
   const s = this, dt = Math.min(delta, 40);
   if (s.phase === 'title') {
-    s.prompt.setAlpha(.55 + Math.sin(time / 220) * .4);
+    s.prompt.setAlpha(.68 + Math.sin(time / 300) * .25);
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) startMatch(s, time);
   } else if (s.phase === 'playing') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'paused'; s.message.setText('PAUSED\nPRESS START TO RESUME').setVisible(true); }
@@ -62,8 +76,9 @@ function update(time, delta) {
 
 function startMatch(s, time) {
   s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'playing'; s.turnoverUntil = time + 1700;
+  [s.hudArt, s.hudLeft, s.hudRight, s.hud, s.hudStatus].forEach(item => item.setVisible(true));
   s.fieldMarks.forEach(mark => mark.setVisible(true));
-  s.titleTag.setVisible(false); s.title.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.message?.destroy();
+  s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
   makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0], false, .08, 0);
 }
@@ -83,19 +98,26 @@ function makeTeams(s) {
 function createPlayer(s, team, number, x, y) {
   const color = team === 0 ? C.lime : C.red;
   const root = s.add.container(x, y).setDepth(6);
-  root.add(s.add.ellipse(0, 28, 33, 8, C.black, .6));
-  root.add(s.add.rectangle(0, 7, 22, 31, color).setStrokeStyle(2, C.cream));
-  root.add(s.add.circle(0, -15, 12, 0xf0c49a).setStrokeStyle(2, C.cream));
-  root.add(s.add.arc(0, -16, 13, 205, 335, false, C.ink).setStrokeStyle(4, team === 0 ? C.cream : C.ink));
-  root.add(s.add.rectangle(-7, 29, 7, 17, C.cream)); root.add(s.add.rectangle(7, 29, 7, 17, C.cream));
-  root.add(s.add.rectangle(-17, 5, 7, 21, color).setRotation(-.3)); root.add(s.add.rectangle(17, 5, 7, 21, color).setRotation(.3));
-  root.add(s.add.text(0, 6, String(number + 1), { fontFamily: 'monospace', fontSize: '9px', color: team === 0 ? '#092218' : '#fff4cf', fontStyle: 'bold' }).setOrigin(.5));
-  const roleLabel = s.add.text(0, -43, '', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 3 }).setOrigin(.5);
+  const ballRing = s.add.ellipse(0, 14, 50, 32, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
+  root.add(s.add.ellipse(0, 31, 38, 10, C.black, .68));
+  root.add(s.add.rectangle(-8, 27, 9, 17, 0x10251a)); root.add(s.add.rectangle(8, 27, 9, 17, 0x10251a));
+  root.add(s.add.rectangle(-9, 34, 13, 5, C.cream)); root.add(s.add.rectangle(9, 34, 13, 5, C.cream));
+  root.add(s.add.rectangle(0, 12, 30, 28, color).setStrokeStyle(2, C.cream));
+  root.add(s.add.rectangle(0, 1, 38, 11, team === 0 ? 0xb6d900 : 0xc44b3b).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(-20, 11, 9, 20, color).setRotation(-.2).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(20, 11, 9, 20, color).setRotation(.2).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(0, -5, 11, 7, 0xf0c49a));
+  root.add(s.add.ellipse(0, -17, 30, 23, team === 0 ? 0xb7dc10 : 0xc94d3e).setStrokeStyle(2, C.cream));
+  root.add(s.add.rectangle(0, -18, 4, 19, C.cream));
+  root.add(s.add.rectangle(14, -14, 11, 3, C.cream)); root.add(s.add.rectangle(14, -5, 11, 3, C.cream));
+  root.add(s.add.rectangle(20, -10, 3, 11, C.cream));
+  root.add(s.add.text(0, 12, String(number + 1), { fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: team === 0 ? '#092218' : '#fff4cf', fontStyle: 'bold' }).setOrigin(.5));
+  const roleLabel = s.add.text(0, -47, '', { fontFamily: 'monospace', fontSize: '10px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5);
   root.add(roleLabel);
-  const controlLabel = s.add.text(0, -59, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#e1ff00' : '#ff8e7a', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setVisible(false);
+  const controlLabel = s.add.text(0, -64, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#e1ff00' : '#ff8e7a', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setVisible(false);
   root.add(controlLabel);
   const banana = makeBanana(s, 19, -8, .45); root.add(banana); banana.setVisible(false);
-  return { root, banana, roleLabel, controlLabel, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
+  return { root, banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
 }
 
 function playFrame(s, time, dt) {
@@ -112,6 +134,7 @@ function playFrame(s, time, dt) {
       let vx = 0, vy = 0;
       p.roleLabel.setText(roleName(p.position, team === s.possession));
       p.controlLabel.setVisible(controlledSet.has(p));
+      p.ballRing.setVisible(p === carrier && !s.pass);
       if (controlledSet.has(p)) {
         const pre = team === 0 ? 'P1_' : 'P2_';
         vx = (held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0);
@@ -322,7 +345,9 @@ function updateHud(s) {
   const carrier = s.players[s.possession][0], dir = s.possession === 0 ? 1 : -1;
   const yards = Math.floor((dir > 0 ? WORLD - END - carrier.x : carrier.x - END) / 17);
   const mode = s.twoPlayers ? 'P1 VS P2' : 'P1 VS CPU';
-  s.hud.setText(`PLATANANA BOWL     ${mode}     P1 ${s.scores[0]}  -  ${s.scores[1]} P2     ${Math.max(0, yards)} YDS TO GO`);
+  s.hudLeft.setText('P1'); s.hudRight.setText(s.twoPlayers ? 'P2' : 'CPU');
+  s.hud.setText(`${s.scores[0]}  —  ${s.scores[1]}`);
+  s.hudStatus.setText(`${mode}    ·    ${Math.max(0, yards)} YDS TO GO`);
   if (!s.twoPlayers && s.possession === 1) s.help.setText('P1 MOVE WASD   TACKLE I     CPU RUNS / PASSES');
   else if (!s.twoPlayers) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     CPU DEFENDS');
   else if (s.possession === 0) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     P2 MOVE ARROWS   TACKLE T');
@@ -332,6 +357,10 @@ function updateHud(s) {
 function drawField(s) {
   const g = s.fieldArt; g.clear();
   g.fillStyle(C.grass); g.fillRect(0, TOP, WORLD, BOTTOM - TOP);
+  for (let x = END; x < WORLD - END; x += 200) {
+    g.fillStyle((x / 200) % 2 ? 0x1c5739 : 0x164a32, .52);
+    g.fillRect(x, TOP + 2, 100, BOTTOM - TOP - 4);
+  }
   const zoneLeft = [0, WORLD - END];
   for (const x of zoneLeft) {
     g.fillStyle(0x0d3b28); g.fillRect(x, TOP, END, BOTTOM - TOP);
@@ -358,12 +387,62 @@ function drawField(s) {
   addFieldMark(s, s.add.text(midX, midY - 13, 'HACK 26', { fontFamily: 'monospace', fontSize: '27px', color: '#e1ff00', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
   addFieldMark(s, s.add.text(midX, midY + 20, 'aramis2009', { fontFamily: 'monospace', fontSize: '13px', color: '#fff4cf', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2));
   g.fillStyle(0x0b2518); g.fillRect(0, BOTTOM, WORLD, H - BOTTOM);
+  g.fillStyle(C.lime, .78); g.fillRect(0, BOTTOM, WORLD, 3);
+  for (let x = 30; x < WORLD; x += 96) {
+    g.fillStyle(x % 192 ? 0x153f2a : 0x1d5538, .9); g.fillRect(x, BOTTOM + 14, 54, 22);
+    g.lineStyle(1, C.cream, .25); g.strokeRect(x, BOTTOM + 14, 54, 22);
+  }
   g.fillStyle(C.cream, .7);
   for (let x = END + 50; x < WORLD - END; x += 100) {
     const n = Math.round((x - END) / 17);
     s.add.text(x, TOP + 11, String(n), { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf' }).setOrigin(.5).setDepth(1);
     s.add.text(x, BOTTOM - 13, String(n), { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf' }).setOrigin(.5).setDepth(1);
   }
+}
+
+function drawStadium(s) {
+  const g = s.stadiumArt;
+  g.fillStyle(C.black); g.fillRect(0, 0, WORLD, H);
+  g.fillStyle(0x0c281b); g.fillRect(0, 0, WORLD, TOP);
+  g.fillStyle(0x163d29); g.fillRect(0, 42, WORLD, 72);
+  g.fillStyle(0x205437); g.fillRect(0, 51, WORLD, 4);
+  g.fillStyle(0x0a2117); g.fillRect(0, 115, WORLD, 30);
+  g.lineStyle(2, C.lime, .3); g.lineBetween(0, 116, WORLD, 116);
+  for (let x = 16; x < WORLD; x += 46) {
+    const row = Math.floor(x / 46) % 3;
+    g.fillStyle(row === 0 ? C.lime : row === 1 ? C.red : C.cream, .75);
+    g.fillCircle(x, 68 + row * 11, 2.2); g.fillCircle(x + 18, 88 - row * 4, 2);
+  }
+  for (let x = 40; x < WORLD; x += 240) {
+    g.fillStyle(C.ink, .95); g.fillRect(x, 16, 86, 25);
+    g.lineStyle(2, C.lime, .72); g.strokeRect(x, 16, 86, 25);
+    g.fillStyle(C.gold, .8); g.fillCircle(x + 16, 29, 5); g.fillCircle(x + 70, 29, 5);
+    g.lineStyle(1, C.cream, .55); g.lineBetween(x + 28, 29, x + 58, 29);
+  }
+  g.fillStyle(0x0b2518); g.fillRect(0, BOTTOM, WORLD, H - BOTTOM);
+  g.fillStyle(0x123927); g.fillRect(0, BOTTOM + 7, WORLD, 5);
+}
+
+function drawHudPlate(g) {
+  g.fillStyle(C.black, .88); g.fillRect(188, 10, 424, 66);
+  g.fillStyle(C.lime, .94); g.fillRect(188, 10, 72, 66);
+  g.fillStyle(C.red, .94); g.fillRect(540, 10, 72, 66);
+  g.fillStyle(C.ink, .95); g.fillRect(260, 10, 280, 66);
+  g.lineStyle(2, C.cream, .75); g.strokeRect(188, 10, 424, 66);
+  g.lineStyle(1, C.lime, .55); g.lineBetween(260, 10, 260, 76); g.lineBetween(540, 10, 540, 76);
+  g.lineStyle(2, C.gold, .8); g.lineBetween(376, 20, 424, 20); g.lineBetween(376, 66, 424, 66);
+}
+
+function drawTitlePlate(g) {
+  g.fillStyle(C.black, .9); g.fillRect(92, 113, 616, 374);
+  g.fillStyle(C.ink, .92); g.fillRect(101, 122, 598, 356);
+  g.lineStyle(2, C.lime, .72); g.strokeRect(92, 113, 616, 374);
+  g.lineStyle(1, C.cream, .42); g.strokeRect(101, 122, 598, 356);
+  g.fillStyle(C.lime, .95); g.fillRect(92, 113, 146, 5);
+  g.fillStyle(C.red, .95); g.fillRect(562, 482, 146, 5);
+  g.lineStyle(2, C.lime, .48); g.strokeCircle(572, 295, 94); g.strokeCircle(572, 295, 79);
+  g.lineStyle(1, C.cream, .2); g.lineBetween(505, 228, 639, 362); g.lineBetween(639, 228, 505, 362);
+  g.fillStyle(C.gold, .9); g.fillCircle(671, 158, 3); g.fillCircle(654, 172, 2); g.fillCircle(682, 184, 2);
 }
 
 function addFieldMark(s, mark) { s.fieldMarks.push(mark); return mark; }
