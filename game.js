@@ -99,11 +99,12 @@ function createPlayer(s, team, number, x, y) {
 }
 
 function playFrame(s, time, dt) {
-  if (['P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'P2_2'].some(k => held(s, k) || s.inputState.pressed[k])) s.twoPlayers = true;
+  const p2Input = ['P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'P2_2', 'P2_3'].some(k => held(s, k) || s.inputState.pressed[k]);
+  if (p2Input) s.twoPlayers = true;
   const carrier = s.players[s.possession][0], attack = s.possession === 0 ? 1 : -1;
   const human0 = s.possession === 0 ? s.players[0][0] : nearestPlayer(s.players[0], carrier);
   const human1 = s.possession === 1 ? s.players[1][0] : nearestPlayer(s.players[1], carrier);
-  const controlled = s.twoPlayers ? [human0, human1] : [human0];
+  const controlled = s.twoPlayers && p2Input ? [human0, human1] : [human0];
   const controlledSet = new Set(controlled);
   for (let team = 0; team < 2; team++) {
     const members = s.players[team];
