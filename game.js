@@ -282,7 +282,7 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520);
   impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
   const from = { x: p.x, y: p.y - 8 }, ballScale = longPass ? 1.08 : .92;
-  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y - 8, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.85 : 2.05), longPass ? 700 : 420, longPass ? 1500 : 850), height: longPass ? 18 : 9, angle: Math.atan2(targetY - from.y, targetX - from.x), ballScale, longPass, shadow: s.add.ellipse(from.x, from.y + 7, 29, 10, C.black, .32).setDepth(11), visual: makeBanana(s, from.x, from.y, ballScale) };
+  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y - 8, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.15 : .95), longPass ? 340 : 260, longPass ? 780 : 560), height: longPass ? 18 : 9, angle: Math.atan2(targetY - from.y, targetX - from.x), ballScale, longPass, shadow: s.add.ellipse(from.x, from.y + 7, 29, 10, C.black, .32).setDepth(11), visual: makeBanana(s, from.x, from.y, ballScale) };
   s.pass.visual.setVisible(true).setDepth(12);
 }
 
