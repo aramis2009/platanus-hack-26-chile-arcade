@@ -158,7 +158,8 @@ function playFrame(s, time, dt) {
       const distance = Phaser.Math.Distance.Between(current.x, current.y, defender.x, defender.y);
       if (distance < (time < defender.tackleUntil ? 39 : 25)) {
         setPossession(s, 1 - s.possession, defender); s.turnoverUntil = time + 1400;
-        s.message.setText('TURNOVER!').setAlpha(1); s.messageUntil = time + 800; break;
+        playCue(s, 'TACKLED! BANANA STOLEN!', '#ff8e7a', time, 850, .006);
+        impactBurst(s, defender.x, defender.y, C.red); break;
       }
     }
   }
@@ -219,7 +220,7 @@ function cpuCarryIntent(s, carrier, attack, time) {
   const targetY = time < (carrier.evadeUntil || 0)
     ? Phaser.Math.Clamp(carrier.y + carrier.evadeSide * 105, TOP + 42, BOTTOM - 42)
     : carrier.y + (center - carrier.y) * .12;
-  const receiver = nearest.distance < 155 ? findOpenReceiver(s, carrier, attack) : null;
+  const receiver = nearest.distance < 225 ? findOpenReceiver(s, carrier, attack) : null;
   return { vx: attack, vy: Phaser.Math.Clamp((targetY - carrier.y) / 55, -1, 1), receiver, longPass: receiver ? Phaser.Math.Distance.Between(carrier.x, carrier.y, receiver.x, receiver.y) > 310 : false };
 }
 
@@ -250,6 +251,7 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   options.sort(longPass ? (a, b) => b.dot - a.dot || b.dist - a.dist : (a, b) => a.dist - b.dist);
   const target = preferredTarget || options[0].p;
   const distance = Phaser.Math.Distance.Between(p.x, p.y, target.x, target.y);
+  playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520);
   s.pass = { from: { x: p.x, y: p.y - 8 }, target, x: p.x, y: p.y - 8, elapsed: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 2.15 : 2.4), longPass ? 700 : 420, longPass ? 1500 : 850), arc: longPass ? 170 : 112, visual: makeBanana(s, p.x, p.y - 8, longPass ? .85 : .72) };
   s.pass.visual.setVisible(true).setDepth(12);
 }
@@ -263,14 +265,14 @@ function updatePass(s, dt, time) {
   for (const d of defenders) {
     if (Phaser.Math.Distance.Between(d.x, d.y - 10, f.x, f.y) < 25) {
       f.visual.destroy(); s.pass = null; setPossession(s, 1 - s.possession, d); s.turnoverUntil = time + 1400;
-      s.message.setText('INTERCEPTED!').setAlpha(1); s.messageUntil = time + 900; return;
+      playCue(s, 'INTERCEPTED!', '#ff8e7a', time, 900, .007); impactBurst(s, d.x, d.y, C.red); return;
     }
   }
   if (t >= 1) {
     f.visual.destroy(); s.pass = null; target.x = f.x; target.y = f.y;
     target.root.setPosition(target.x, target.y);
     setPossession(s, s.possession, target); s.turnoverUntil = time + 1100;
-    s.message.setText('CATCH!').setAlpha(1); s.messageUntil = time + 450;
+    playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, target.x, target.y, C.gold);
   }
 }
 
@@ -290,6 +292,10 @@ function nearestPlayer(players, target) { return players.slice(1).reduce((a, b) 
 
 function scoreTouchdown(s, time) {
   s.scores[s.possession]++;
+  const scorer = s.players[s.possession][0];
+  s.cameras.main.flash(250, 225, 255, 0);
+  s.cameras.main.shake(240, .008);
+  impactBurst(s, scorer.x, scorer.y, C.lime);
   if (s.scores[s.possession] >= 3) {
     s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.possession + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setAlpha(1);
     s.cameras.main.stopFollow(); return;
@@ -297,6 +303,19 @@ function scoreTouchdown(s, time) {
   const next = 1 - s.possession; s.possession = next; s.pass = null; makeTeams(s); s.turnoverUntil = time + 1500;
   s.message.setText('TOUCHDOWN!').setAlpha(1); s.messageUntil = time + 1050;
   s.cameras.main.startFollow(s.players[s.possession][0], false, .08, 0);
+}
+
+function playCue(s, text, color, time, duration, shake = 0) {
+  s.message.setText(text).setColor(color).setAlpha(1);
+  s.messageUntil = time + duration;
+  if (shake) s.cameras.main.shake(130, shake);
+}
+
+function impactBurst(s, x, y, color) {
+  for (let i = 0; i < 8; i++) {
+    const angle = i * Math.PI / 4, spark = s.add.circle(x, y, 4, color, .95).setDepth(14);
+    s.tweens.add({ targets: spark, x: x + Math.cos(angle) * 48, y: y + Math.sin(angle) * 48, scale: .35, alpha: 0, duration: 380, onComplete: () => spark.destroy() });
+  }
 }
 
 function updateHud(s) {
