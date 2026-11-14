@@ -80,7 +80,7 @@ function startMatch(s, time) {
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
-  makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0], false, .08, 0);
+  makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0], false, .05, .06);
 }
 
 function makeTeams(s) {
@@ -181,7 +181,7 @@ function playFrame(s, time, dt) {
       const distance = Phaser.Math.Distance.Between(current.x, current.y, defender.x, defender.y);
       if (distance < (time < defender.tackleUntil ? 39 : 25)) {
         setPossession(s, 1 - s.possession, defender); s.turnoverUntil = time + 1400;
-        playCue(s, 'TACKLED! BANANA STOLEN!', '#ff8e7a', time, 850, .006);
+        playCue(s, 'TACKLED! BANANA STOLEN!', '#ff8e7a', time, 850);
         impactBurst(s, defender.x, defender.y, C.red); break;
       }
     }
@@ -279,33 +279,34 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   const targetX = Phaser.Math.Clamp(target.x + lead, END + 28, WORLD - END - 28);
   const targetY = target.y;
   const distance = Phaser.Math.Distance.Between(p.x, p.y, targetX, targetY);
-  playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520, .002);
+  playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520);
   impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
-  s.pass = { from: { x: p.x, y: p.y - 8 }, target, targetX, targetY, x: p.x, y: p.y - 8, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.85 : 2.05), longPass ? 700 : 420, longPass ? 1500 : 850), arc: longPass ? 182 : 118, spin: longPass ? 9 : 6, longPass, visual: makeBanana(s, p.x, p.y - 8, longPass ? 1.08 : .92) };
+  const from = { x: p.x, y: p.y - 8 }, ballScale = longPass ? 1.08 : .92;
+  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y - 8, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.85 : 2.05), longPass ? 700 : 420, longPass ? 1500 : 850), height: longPass ? 18 : 9, angle: Math.atan2(targetY - from.y, targetX - from.x), ballScale, longPass, shadow: s.add.ellipse(from.x, from.y + 7, 29, 10, C.black, .32).setDepth(11), visual: makeBanana(s, from.x, from.y, ballScale) };
   s.pass.visual.setVisible(true).setDepth(12);
 }
 
 function updatePass(s, dt, time) {
   const f = s.pass; f.elapsed += dt;
   const t = Math.min(1, f.elapsed / f.duration), target = f.target;
-  f.targetX = Phaser.Math.Clamp(target.x + (f.targetX - f.target.x), END + 28, WORLD - END - 28);
-  f.targetY = Phaser.Math.Clamp(target.y + (f.targetY - f.target.y), TOP + 20, BOTTOM - 20);
-  f.x = Phaser.Math.Linear(f.from.x, f.targetX, t); f.y = Phaser.Math.Linear(f.from.y, f.targetY, t) - Math.sin(t * Math.PI) * f.arc;
-  f.visual.setPosition(f.x, f.y).setRotation((f.x - f.from.x) * .008 + t * f.spin);
+  f.x = Phaser.Math.Linear(f.from.x, f.targetX, t); f.y = Phaser.Math.Linear(f.from.y, f.targetY, t);
+  const lift = Math.sin(t * Math.PI) * f.height;
+  f.shadow.setPosition(f.x, f.y + 7).setScale(1 + lift * .012, .72);
+  f.visual.setPosition(f.x, f.y - lift).setRotation(f.angle + Math.sin(t * Math.PI * 2) * .035).setScale(f.ballScale + lift * .002);
   if (time >= f.trailAt) {
-    const fleck = s.add.circle(f.x, f.y, f.longPass ? 6 : 4, time % 2 ? C.gold : C.cream, .62).setDepth(11);
-    s.tweens.add({ targets: fleck, scale: .15, alpha: 0, duration: 260, onComplete: () => fleck.destroy() });
-    f.trailAt = time + 42;
+    const fleck = s.add.ellipse(f.x, f.y - lift, f.longPass ? 12 : 8, 3, time % 2 ? C.gold : C.cream, .56).setRotation(f.angle).setDepth(11);
+    s.tweens.add({ targets: fleck, x: f.x - Math.cos(f.angle) * 25, y: f.y - lift - Math.sin(f.angle) * 25, scale: .15, alpha: 0, duration: 210, onComplete: () => fleck.destroy() });
+    f.trailAt = time + 48;
   }
   const defenders = s.players[1 - s.possession];
   for (const d of defenders) {
     if (Phaser.Math.Distance.Between(d.x, d.y - 10, f.x, f.y) < 25) {
-      f.visual.destroy(); s.pass = null; setPossession(s, 1 - s.possession, d); s.turnoverUntil = time + 1400;
-      playCue(s, 'INTERCEPTED!', '#ff8e7a', time, 900, .007); impactBurst(s, d.x, d.y, C.red); return;
+      f.visual.destroy(); f.shadow.destroy(); s.pass = null; setPossession(s, 1 - s.possession, d); s.turnoverUntil = time + 1400;
+      playCue(s, 'INTERCEPTED!', '#ff8e7a', time, 900); impactBurst(s, d.x, d.y, C.red); return;
     }
   }
   if (t >= 1) {
-    f.visual.destroy(); s.pass = null; target.x = f.x; target.y = f.y;
+    f.visual.destroy(); f.shadow.destroy(); s.pass = null; target.x = f.x; target.y = f.y;
     target.root.setPosition(target.x, target.y);
     setPossession(s, s.possession, target); s.turnoverUntil = time + 1100;
     playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, target.x, target.y, C.gold);
@@ -321,7 +322,7 @@ function setPossession(s, team, player) {
   }
   for (const p of s.players.flat()) p.banana.setVisible(false);
   group[0].banana.setVisible(!s.pass);
-  if (s.cameras?.main) s.cameras.main.startFollow(group[0], false, .08, 0);
+  if (s.cameras?.main) s.cameras.main.startFollow(group[0], false, .05, .06);
 }
 
 function nearestPlayer(players, target) { return players.slice(1).reduce((a, b) => Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y) < Phaser.Math.Distance.Between(b.x, b.y, target.x, target.y) ? a : b, players[1]); }
@@ -338,7 +339,7 @@ function scoreTouchdown(s, time) {
   }
   const next = 1 - s.possession; s.possession = next; s.pass = null; makeTeams(s); s.turnoverUntil = time + 1500;
   s.message.setText('TOUCHDOWN!').setAlpha(1); s.messageUntil = time + 1050;
-  s.cameras.main.startFollow(s.players[s.possession][0], false, .08, 0);
+  s.cameras.main.startFollow(s.players[s.possession][0], false, .05, .06);
 }
 
 function playCue(s, text, color, time, duration, shake = 0) {
