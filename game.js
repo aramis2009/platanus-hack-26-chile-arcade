@@ -116,7 +116,7 @@ function createPlayer(s, team, number, x, y) {
   root.add(roleLabel);
   const controlLabel = s.add.text(0, -64, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#e1ff00' : '#ff8e7a', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setVisible(false);
   root.add(controlLabel);
-  const banana = makeBanana(s, 19, -8, .45); root.add(banana); banana.setVisible(false);
+  const banana = makeBanana(s, 22, -8, .58); root.add(banana); banana.setVisible(false);
   return { root, banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
 }
 
@@ -167,7 +167,7 @@ function playFrame(s, time, dt) {
       const mag = Math.hypot(vx, vy) || 1;
       const dashing = time < p.jukeUntil || time < p.tackleUntil;
       const chaseGap = team !== s.possession ? Phaser.Math.Distance.Between(p.x, p.y, carrier.x, carrier.y) : 0;
-      const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.possession ? 178 : chaseGap > 160 ? 218 : 188;
+      const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.possession ? (p.position === 1 || p.position === 2 ? 205 : 178) : chaseGap > 160 ? 218 : 188;
       p.x = Phaser.Math.Clamp(p.x + vx / mag * speed * dt / 1000, 24, WORLD - 24);
       p.y = Phaser.Math.Clamp(p.y + vy / mag * speed * dt / 1000, TOP + 30, BOTTOM - 27);
       p.root.setPosition(p.x, p.y).setScale(team === s.possession ? attack : -attack, 1);
@@ -201,9 +201,10 @@ function roleName(position, offense) {
 
 function offenseTarget(s, p, carrier, attack, time) {
   if (p.position === 1 || p.position === 2) {
-    const lane = p.position === 1 ? TOP + 86 : BOTTOM - 88;
-    const route = Math.sin(time / 430 + p.position * 2) * 22;
-    return [Phaser.Math.Clamp(carrier.x + attack * (175 + p.position * 28), END + 42, WORLD - END - 42), lane + route];
+    const lane = p.position === 1 ? TOP + 56 : BOTTOM - 56;
+    const route = Math.sin(time / 470 + p.position * 2) * 18;
+    const lead = p.position === 1 ? 225 : 285;
+    return [Phaser.Math.Clamp(carrier.x + attack * lead, END + 42, WORLD - END - 42), lane + route];
   }
   const rusher = nearestPlayer(s.players[1 - s.possession], carrier);
   if (p.position === 3) {
@@ -273,17 +274,29 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   const options = forward.length ? forward : targets;
   options.sort(longPass ? (a, b) => b.dot - a.dot || b.dist - a.dist : (a, b) => a.dist - b.dist);
   const target = preferredTarget || options[0].p;
-  const distance = Phaser.Math.Distance.Between(p.x, p.y, target.x, target.y);
-  playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520);
-  s.pass = { from: { x: p.x, y: p.y - 8 }, target, x: p.x, y: p.y - 8, elapsed: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 2.15 : 2.4), longPass ? 700 : 420, longPass ? 1500 : 850), arc: longPass ? 170 : 112, visual: makeBanana(s, p.x, p.y - 8, longPass ? .85 : .72) };
+  const attack = s.possession === 0 ? 1 : -1;
+  const lead = target.position === 1 || target.position === 2 ? attack * (longPass ? 104 : 54) : 0;
+  const targetX = Phaser.Math.Clamp(target.x + lead, END + 28, WORLD - END - 28);
+  const targetY = target.y;
+  const distance = Phaser.Math.Distance.Between(p.x, p.y, targetX, targetY);
+  playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520, .002);
+  impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
+  s.pass = { from: { x: p.x, y: p.y - 8 }, target, targetX, targetY, x: p.x, y: p.y - 8, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.85 : 2.05), longPass ? 700 : 420, longPass ? 1500 : 850), arc: longPass ? 182 : 118, spin: longPass ? 9 : 6, longPass, visual: makeBanana(s, p.x, p.y - 8, longPass ? 1.08 : .92) };
   s.pass.visual.setVisible(true).setDepth(12);
 }
 
 function updatePass(s, dt, time) {
   const f = s.pass; f.elapsed += dt;
   const t = Math.min(1, f.elapsed / f.duration), target = f.target;
-  f.x = Phaser.Math.Linear(f.from.x, target.x, t); f.y = Phaser.Math.Linear(f.from.y, target.y, t) - Math.sin(t * Math.PI) * f.arc;
-  f.visual.setPosition(f.x, f.y).setRotation((f.x - f.from.x) * .008);
+  f.targetX = Phaser.Math.Clamp(target.x + (f.targetX - f.target.x), END + 28, WORLD - END - 28);
+  f.targetY = Phaser.Math.Clamp(target.y + (f.targetY - f.target.y), TOP + 20, BOTTOM - 20);
+  f.x = Phaser.Math.Linear(f.from.x, f.targetX, t); f.y = Phaser.Math.Linear(f.from.y, f.targetY, t) - Math.sin(t * Math.PI) * f.arc;
+  f.visual.setPosition(f.x, f.y).setRotation((f.x - f.from.x) * .008 + t * f.spin);
+  if (time >= f.trailAt) {
+    const fleck = s.add.circle(f.x, f.y, f.longPass ? 6 : 4, time % 2 ? C.gold : C.cream, .62).setDepth(11);
+    s.tweens.add({ targets: fleck, scale: .15, alpha: 0, duration: 260, onComplete: () => fleck.destroy() });
+    f.trailAt = time + 42;
+  }
   const defenders = s.players[1 - s.possession];
   for (const d of defenders) {
     if (Phaser.Math.Distance.Between(d.x, d.y - 10, f.x, f.y) < 25) {
@@ -449,11 +462,15 @@ function addFieldMark(s, mark) { s.fieldMarks.push(mark); return mark; }
 
 function makeBanana(s, x, y, scale) {
   const c = s.add.container(x, y).setScale(scale);
-  c.add(s.add.ellipse(0, 0, 40, 17, C.gold).setRotation(-.24).setStrokeStyle(2, 0x8c5319));
-  c.add(s.add.ellipse(-13, -2, 10, 14, C.lime).setRotation(-.45));
-  c.add(s.add.ellipse(13, 2, 9, 13, 0xffdf77).setRotation(.45));
-  c.add(s.add.rectangle(0, 0, 2, 11, 0x8c5319).setRotation(-.24));
-  c.add(s.add.rectangle(-20, -2, 5, 4, 0x5e3614).setRotation(-.24)); c.add(s.add.rectangle(20, 2, 5, 4, 0x5e3614).setRotation(-.24));
+  c.add(s.add.ellipse(0, 1, 55, 27, 0x8a4d18).setRotation(-.2));
+  c.add(s.add.ellipse(0, 0, 51, 22, C.gold).setRotation(-.2).setStrokeStyle(2, 0x704018));
+  c.add(s.add.ellipse(-2, 4, 37, 9, 0xd78c25, .72).setRotation(-.2));
+  c.add(s.add.ellipse(-12, -5, 17, 4, 0xffef9c, .9).setRotation(-.2));
+  c.add(s.add.ellipse(-25, -2, 8, 11, C.lime).setRotation(-.45));
+  c.add(s.add.ellipse(25, 2, 8, 11, 0xffdf77).setRotation(.45));
+  c.add(s.add.rectangle(0, 0, 2, 12, 0x704018).setRotation(-.2));
+  for (let i = -1; i <= 1; i++) c.add(s.add.rectangle(i * 5, -1, 2, 8, C.cream).setRotation(-.2));
+  c.add(s.add.rectangle(-28, -2, 5, 4, 0x5e3614).setRotation(-.2)); c.add(s.add.rectangle(28, 2, 5, 4, 0x5e3614).setRotation(-.2));
   return c;
 }
 
