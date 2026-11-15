@@ -39,14 +39,14 @@ function create() {
   s.cameras.main.setBounds(0, 0, W, WORLD).setScroll(0, WORLD / 2 - H / 2);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawHudPlate(s.hudArt);
-  s.hudHeader = s.add.text(160, 30, 'PLATANANA BOWL', { fontFamily: 'monospace', fontSize: '10px', color: '#e1ff00', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudLeft = s.add.text(64, 60, 'P1', { fontFamily: 'monospace', fontSize: '11px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudRight = s.add.text(255, 60, 'CPU', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hud = s.add.text(160, 61, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudStatus = s.add.text(160, 91, '', { fontFamily: 'monospace', fontSize: '9px', color: '#c1d9c5', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudHeader = s.add.text(122, 24, 'PLATANANA', { fontFamily: 'monospace', fontSize: '8px', color: '#e1ff00', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudLeft = s.add.text(51, 51, 'P1', { fontFamily: 'monospace', fontSize: '9px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudRight = s.add.text(193, 51, 'CPU', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hud = s.add.text(122, 52, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '17px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudStatus = s.add.text(700, 57, '', { fontFamily: 'monospace', fontSize: '8px', color: '#c1d9c5', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.driveArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawDrivePlate(s.driveArt);
-  s.driveBanner = s.add.text(W / 2, 529, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#07180f', strokeThickness: 5 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.driveBanner = s.add.text(700, 36, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#07180f', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(false));
   s.helpPlate = s.add.graphics().setScrollFactor(0).setDepth(19);
   s.helpPlate.fillStyle(C.ink, .92).fillRect(130, 567, 540, 25);
@@ -61,7 +61,7 @@ function create() {
   s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
   s.prompt = s.add.text(142, 446, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
   s.titleBanana = makeBanana(s, 572, 295, 2.2).setRotation(-.28).setScrollFactor(0).setDepth(20);
-  s.help.setText('MOVE WASD  ·  PASS U  ·  LONG PASS O  ·  JUKE I');
+  s.help.setText('AIM WASD  ·  PASS U  ·  LONG PASS O');
   s.cameras.main.setFollowOffset(0, 0);
 }
 
@@ -73,6 +73,8 @@ function update(time, delta) {
   } else if (s.phase === 'playing') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'paused'; s.message.setText('PAUSED\nPRESS START TO RESUME').setVisible(true); }
     else playFrame(s, time, dt);
+  } else if (s.phase === 'loose') {
+    updateLooseBall(s, time);
   } else if (s.phase === 'countdown') {
     updateCountdown(s, time);
   } else if (s.phase === 'spotting') {
@@ -171,6 +173,7 @@ function playFrame(s, time, dt) {
   const p2Input = ['P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'P2_2', 'P2_3'].some(k => held(s, k) || s.inputState.pressed[k]);
   if (p2Input) s.twoPlayers = true;
   const carrier = s.players[s.possession][0], attack = s.possession === 0 ? 1 : -1;
+  const ballTarget = s.looseBall || carrier;
   const human0 = s.possession === 0 ? s.players[0][0] : nearestPlayer(s.players[0], carrier);
   const human1 = s.possession === 1 ? s.players[1][0] : nearestPlayer(s.players[1], carrier);
   const controlled = s.twoPlayers && p2Input ? [human0, human1] : [human0];
@@ -207,7 +210,7 @@ function playFrame(s, time, dt) {
         vx = Phaser.Math.Clamp((targetX - p.x) / 120, -1, 1);
         vy = Phaser.Math.Clamp((targetY - p.y) / 90, -1, 1);
       } else if (team !== s.possession) {
-        const [targetX, targetY] = defenseTarget(s, p, carrier, attack, time);
+        const [targetX, targetY] = defenseTarget(s, p, ballTarget, attack, time);
         vx = Phaser.Math.Clamp((targetX - p.x) / 115, -1, 1);
         vy = Phaser.Math.Clamp((targetY - p.y) / 85, -1, 1);
       }
@@ -223,24 +226,33 @@ function playFrame(s, time, dt) {
       p.roleLabel.setPosition(px, py - 39).setDepth(10 + p.x * .001);
       p.controlLabel.setPosition(px, py - 53).setDepth(11 + p.x * .001);
       p.banana.setPosition(0, -25).setRotation(Math.PI / 2);
-      p.banana.setVisible(p === carrier && !s.pass);
+      p.banana.setVisible(p === carrier && !s.pass && !s.looseBall);
     }
   }
   if (s.pass) updatePass(s, dt, time);
+  if (s.looseBall) updateLooseBall(s, time);
   const current = s.players[s.possession][0];
-  if (!s.pass && time > s.turnoverUntil) {
+  if (!s.pass && !s.looseBall && time > s.turnoverUntil) {
     for (const defender of s.players[1 - s.possession]) {
       const distance = Phaser.Math.Distance.Between(current.x, current.y, defender.x, defender.y);
-      if (distance < (time < defender.tackleUntil ? 39 : 25)) {
+      if (distance < 25 && time > (defender.contactUntil || 0)) {
+        defender.contactUntil = time + 850;
         impactBurst(s, defender.x, defender.y, C.red);
-        finishPlay(s, current.x, time, 'TACKLED!'); return;
+        if (Phaser.Math.Between(1, 100) <= (time < defender.tackleUntil ? 45 : 18)) {
+          dropBanana(s, current.x, current.y, time, 1 - s.possession);
+          playCue(s, 'FUMBLE!', '#ff8e7a', time, 750); return;
+        }
+        current.x = Phaser.Math.Clamp(current.x - attack * 22, END + 28, WORLD - END - 28);
+        current.root.setPosition(fieldScreenX(current.y), fieldScreenY(current.x));
+        playCue(s, 'BROKEN TACKLE!', '#e1ff00', time, 400);
+        break;
       }
     }
   }
   if (s.messageUntil && time > s.messageUntil) { s.message.setText(''); s.messageUntil = 0; }
   const carrierNow = s.players[s.possession][0];
   const scored = s.possession === 0 ? carrierNow.x >= WORLD - END : carrierNow.x <= END;
-  if (scored) scoreTouchdown(s, time);
+  if (!s.looseBall && scored) scoreTouchdown(s, time);
   updateHud(s);
 }
 
@@ -320,17 +332,26 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   if (!mates.length) return;
   let dx = vx, dy = vy;
   if (!dx && !dy) dx = s.possession === 0 ? 1 : -1;
-  const targets = mates.map(m => ({ p: m, dot: (m.x - p.x) * dx + (m.y - p.y) * dy, dist: Phaser.Math.Distance.Between(m.x, m.y, p.x, p.y) }));
-  const forward = targets.filter(t => t.dot > 0);
+  const aimLength = Math.hypot(dx, dy), aimX = dx / aimLength, aimY = dy / aimLength;
+  const targets = mates.map(m => {
+    const tx = m.x - p.x, ty = m.y - p.y, dist = Math.hypot(tx, ty);
+    return { p: m, alignment: (tx * aimX + ty * aimY) / Math.max(1, dist), dist };
+  });
+  const forward = targets.filter(t => t.alignment > 0);
   const options = forward.length ? forward : targets;
-  options.sort(longPass ? (a, b) => b.dot - a.dot || b.dist - a.dist : (a, b) => a.dist - b.dist);
+  options.sort((a, b) => b.alignment - a.alignment || (longPass ? b.dist - a.dist : a.dist - b.dist));
   const target = preferredTarget || options[0].p;
   const attack = s.possession === 0 ? 1 : -1;
   const lead = target.position === 1 || target.position === 2 ? attack * (longPass ? 104 : 54) : 0;
-  const targetX = Phaser.Math.Clamp(target.x + lead, END + 28, WORLD - END - 28);
-  const targetY = target.y;
+  const baseX = Phaser.Math.Clamp(target.x + lead, END + 28, WORLD - END - 28), baseY = target.y;
+  const aimDot = (baseX - p.x) * aimX + (baseY - p.y) * aimY;
+  const alignment = Phaser.Math.Clamp(aimDot / Math.max(1, Phaser.Math.Distance.Between(p.x, p.y, baseX, baseY)), 0, 1);
+  const spread = (longPass ? 120 : 82) * (1 - alignment) + 8;
+  const miss = Phaser.Math.FloatBetween(-spread, spread);
+  const targetX = Phaser.Math.Clamp(baseX - aimY * miss, END + 18, WORLD - END - 18);
+  const targetY = Phaser.Math.Clamp(baseY + aimX * miss, TOP + 26, BOTTOM - 24);
   const distance = Phaser.Math.Distance.Between(p.x, p.y, targetX, targetY);
-  playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520);
+  playCue(s, longPass ? 'LONG PASS!' : 'PASS!', '#e1ff00', time, 520);
   impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
   const from = { x: p.x, y: p.y }, ballScale = longPass ? 1.08 : .92;
   const fromScreen = { x: fieldScreenX(from.y), y: fieldScreenY(from.x) };
@@ -360,14 +381,52 @@ function updatePass(s, dt, time) {
     }
   }
   if (t >= 1) {
-    f.visual.destroy(); f.shadow.destroy(); s.pass = null; target.x = f.x; target.y = f.y;
-    if (Phaser.Math.Between(1, 100) <= 10) {
-      finishPlay(s, f.from.x, time, 'INCOMPLETE!'); return;
+    const catchers = s.players[s.possession].filter(p => p !== s.players[s.possession][0]);
+    const receiver = catchers.reduce((best, player) => Phaser.Math.Distance.Between(player.x, player.y, f.x, f.y) < Phaser.Math.Distance.Between(best.x, best.y, f.x, f.y) ? player : best, catchers[0]);
+    f.visual.destroy(); f.shadow.destroy(); s.pass = null;
+    if (Phaser.Math.Distance.Between(receiver.x, receiver.y, f.x, f.y) > 48) {
+      dropBanana(s, f.x, f.y, time, 1 - s.possession); playCue(s, 'WILD PASS!', '#ff8e7a', time, 650); return;
     }
-    target.root.setPosition(fieldScreenX(target.y), fieldScreenY(target.x));
-    setPossession(s, s.possession, target); s.turnoverUntil = time + 1100;
-    playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, target.x, target.y, C.gold);
+    receiver.x = f.x; receiver.y = f.y;
+    receiver.root.setPosition(fieldScreenX(receiver.y), fieldScreenY(receiver.x));
+    setPossession(s, s.possession, receiver); s.turnoverUntil = time + 1100;
+    playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, receiver.x, receiver.y, C.gold);
   }
+}
+
+function dropBanana(s, x, y, time, recoverTeam) {
+  if (s.pass) {
+    if (s.pass.visual.active) s.pass.visual.destroy();
+    if (s.pass.shadow.active) s.pass.shadow.destroy();
+    s.pass = null;
+  }
+  const px = fieldScreenX(y), py = fieldScreenY(x);
+  s.looseBall = { x, y, recoverTeam, landsAt: time + 360, timeoutAt: time + 1500, grounded: false, visual: makeBanana(s, px, py - 20, .84).setDepth(13), shadow: s.add.ellipse(px, py + 7, 28, 9, C.black, .38).setDepth(12) };
+  s.players[s.possession][0].banana.setVisible(false);
+}
+
+function updateLooseBall(s, time) {
+  const ball = s.looseBall;
+  if (!ball) return;
+  const px = fieldScreenX(ball.y), py = fieldScreenY(ball.x);
+  if (!ball.grounded) {
+    const fall = Phaser.Math.Clamp((ball.landsAt - time) / 360, 0, 1);
+    ball.visual.setPosition(px, py - fall * 20).setRotation(fall * .5).setScale(.84 - fall * .12);
+    ball.shadow.setPosition(px, py + 7).setScale(1 - fall * .25, 1 - fall * .25);
+    if (time >= ball.landsAt) {
+      ball.grounded = true; s.phase = 'loose'; playCue(s, 'BALL DOWN!', '#ff8e7a', time, 600);
+    }
+    return;
+  }
+  ball.visual.setPosition(px, py).setScale(.72).setRotation(0);
+  const defenders = s.players[ball.recoverTeam];
+  const nearest = defenders.reduce((best, player) => Phaser.Math.Distance.Between(player.x, player.y, ball.x, ball.y) < Phaser.Math.Distance.Between(best.x, best.y, ball.x, ball.y) ? player : best, defenders[0]);
+  if (Phaser.Math.Distance.Between(nearest.x, nearest.y, ball.x, ball.y) > 42 && time < ball.timeoutAt) return;
+  ball.visual.destroy(); ball.shadow.destroy(); s.looseBall = null;
+  s.possession = ball.recoverTeam; s.down = 1; s.driveStart = ball.x; s.turnoverUntil = time + 700;
+  makeTeams(s, s.possession, ball.x);
+  playCue(s, 'BANANA RECOVERED!', '#ff8e7a', time, 700);
+  updateHud(s); s.phase = 'spotting'; s.spotUntil = time + 700;
 }
 
 function setPossession(s, team, player) {
@@ -436,14 +495,13 @@ function impactBurst(s, x, y, color) {
 
 function updateHud(s) {
   const carrier = s.players[s.possession][0], dir = s.possession === 0 ? 1 : -1;
-  const yards = Math.floor((dir > 0 ? WORLD - END - carrier.x : carrier.x - END) / 15.4);
   const toGo = Math.max(1, Math.ceil((154 - (carrier.x - s.driveStart) * dir) / 15.4));
   const downName = ['1ST', '2ND', '3RD', '4TH'][s.down - 1];
   const mode = s.twoPlayers ? 'P1 VS P2' : 'P1 VS CPU';
   s.hudLeft.setText('P1'); s.hudRight.setText(s.twoPlayers ? 'P2' : 'CPU');
   s.hud.setText(`${s.scores[0]}  —  ${s.scores[1]}`);
-  s.hudStatus.setText(`${mode}    ·    ${downName} & ${toGo} TO GO`);
-  s.driveBanner.setText(`${Math.max(0, yards)} YDS TO END ZONE`);
+  s.hudStatus.setText(mode);
+  s.driveBanner.setText(`${downName} & ${toGo}`);
   s.playLine.clear();
   if (s.phase === 'playing' || s.phase === 'countdown' || s.phase === 'spotting' || s.phase === 'celebrating') {
     const y = carrier.x;
@@ -453,10 +511,10 @@ function updateHud(s) {
     s.playLine.lineStyle(1, C.cream, .88); s.playLine.lineBetween(24, y - 5, W - 24, y - 5);
     s.playLine.fillStyle(C.red, 1); s.playLine.fillTriangle(30, y - 8, 42, y, 30, y + 8);
   }
-  if (!s.twoPlayers && s.possession === 1) s.help.setText('P1 MOVE WASD   TACKLE I     CPU RUNS / PASSES');
-  else if (!s.twoPlayers) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     CPU DEFENDS');
-  else if (s.possession === 0) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     P2 MOVE ARROWS   TACKLE T');
-  else s.help.setText('P2 MOVE ARROWS   PASS R / LONG Y   JUKE T     P1 MOVE WASD   TACKLE I');
+  if (!s.twoPlayers && s.possession === 1) s.help.setText('P1 MOVE WASD   I TO HIT     CPU RUNS / PASSES');
+  else if (!s.twoPlayers) s.help.setText('MOVE WASD   AIM + U PASS   AIM + O LONG   I JUKE');
+  else if (s.possession === 0) s.help.setText('P1 WASD   AIM + U / O PASS   P2 ARROWS   T HIT');
+  else s.help.setText('P2 ARROWS   AIM + R / Y PASS   P1 WASD   I HIT');
 }
 
 function drawField(s) {
@@ -518,24 +576,21 @@ function drawStadium(s) {
 }
 
 function drawHudPlate(g) {
-  g.fillStyle(C.black, .96); g.fillRect(18, 15, 280, 101);
-  g.fillStyle(0x57718d, .95); g.fillRect(18, 15, 280, 9); g.fillRect(18, 15, 12, 101);
-  g.fillStyle(C.ink, .96); g.fillRect(34, 27, 250, 78);
-  g.fillStyle(C.lime, .96); g.fillRect(38, 47, 55, 48);
-  g.fillStyle(C.red, .96); g.fillRect(225, 47, 55, 48);
-  g.lineStyle(2, C.cream, .85); g.strokeRect(18, 15, 280, 101);
-  g.lineStyle(1, C.blue, .65); g.lineBetween(34, 27, 284, 27); g.lineBetween(34, 105, 284, 105);
-  g.lineStyle(2, C.gold, .82); g.lineBetween(128, 103, 192, 103);
+  g.fillStyle(C.black, .88); g.fillRect(18, 12, 208, 57);
+  g.fillStyle(0x57718d, .9); g.fillRect(18, 12, 208, 4); g.fillRect(18, 12, 4, 57);
+  g.fillStyle(C.ink, .92); g.fillRect(25, 19, 194, 43);
+  g.fillStyle(C.lime, .94); g.fillRect(30, 38, 42, 21);
+  g.fillStyle(C.red, .94); g.fillRect(172, 38, 42, 21);
+  g.lineStyle(1, C.cream, .74); g.strokeRect(18, 12, 208, 57);
+  g.lineStyle(1, C.blue, .45); g.lineBetween(25, 35, 219, 35);
 }
 
 function drawDrivePlate(g) {
-  g.fillStyle(C.black, .96); g.fillRect(132, 494, 536, 65);
-  g.fillStyle(0x57718d, .95); g.fillRect(132, 494, 24, 8); g.fillRect(644, 551, 24, 8);
-  g.fillStyle(C.ink, .96); g.fillRect(145, 503, 510, 47);
-  g.lineStyle(2, C.cream, .82); g.strokeRect(132, 494, 536, 65);
-  g.lineStyle(1, C.blue, .5);
-  for (let x = 165; x < 640; x += 34) g.lineBetween(x, 503, x, 550);
-  g.lineStyle(2, C.gold, .82); g.lineBetween(148, 548, 652, 548);
+  g.fillStyle(C.black, .88); g.fillRect(618, 12, 164, 57);
+  g.fillStyle(0x57718d, .9); g.fillRect(778, 12, 4, 57); g.fillRect(618, 65, 164, 4);
+  g.fillStyle(C.ink, .92); g.fillRect(625, 19, 150, 43);
+  g.lineStyle(1, C.cream, .74); g.strokeRect(618, 12, 164, 57);
+  g.lineStyle(1, C.gold, .72); g.lineBetween(631, 45, 769, 45);
 }
 
 function drawTitlePlate(g) {
