@@ -5,6 +5,7 @@ const TOP = 145;
 const BOTTOM = 520;
 const END = 130;
 const C = { grass: 0x164a32, stripe: 0xffffff, lime: 0xe1ff00, gold: 0xffc857, cream: 0xfff4cf, ink: 0x092218, red: 0xf06b50, blue: 0x69b7e8, black: 0x07180f };
+const TOUCHDOWN_EMOJIS = ['🏈', '🎉', '🏆', '🕺', '🔥', '🍌', '🙌', '⚡', '👑', '💥'];
 
 // Cabinet codes match the physical wiring and must remain unchanged.
 const CABINET_KEYS = {
@@ -31,7 +32,7 @@ function preload() {
 function create() {
   const s = this;
   s.inputState = { held: {}, pressed: {} };
-  const down = e => { const c = KEY_TO_ARCADE[(e.key || '').toLowerCase()]; if (c) { if (!s.inputState.held[c]) s.inputState.pressed[c] = true; s.inputState.held[c] = true; } };
+  const down = e => { const c = KEY_TO_ARCADE[(e.key || '').toLowerCase()]; if (c) { if (!s.inputState.held[c]) s.inputState.pressed[c] = true; s.inputState.held[c] = true; if ((c === 'START1' || c === 'START2') && s.phase === 'controls') s.sound?.context?.resume?.(); } };
   const up = e => { const c = KEY_TO_ARCADE[(e.key || '').toLowerCase()]; if (c) s.inputState.held[c] = false; };
   window.addEventListener('keydown', down); window.addEventListener('keyup', up);
   s.events.once('shutdown', () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); });
@@ -88,6 +89,7 @@ function create() {
 
 function update(time, delta) {
   const s = this, dt = Math.min(delta, 40);
+  updateMusic(s);
   if (s.phase === 'title') {
     s.prompt.setAlpha(.68 + Math.sin(time / 300) * .25);
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) showLoading(s, time);
@@ -122,6 +124,7 @@ function startMatch(s, time) {
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
+  startMusic(s);
   makeTeams(s, 0, s.driveStart); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
   beginCountdown(s, time);
 }
@@ -519,12 +522,49 @@ function scoreTouchdown(s, time) {
   s.phase = 'celebrating'; s.nextTeam = 1 - s.possession;
   s.pendingWinner = s.scores[s.possession] >= 3 ? s.possession : null;
   s.celebrationUntil = time + 2200; s.messageUntil = 0;
-  s.message.setText('TOUCHDOWN!').setFontSize('40px').setColor('#e1ff00').setAlpha(1).setScale(1);
+  const emoji = TOUCHDOWN_EMOJIS[Phaser.Math.Between(0, TOUCHDOWN_EMOJIS.length - 1)];
+  s.message.setText(`${emoji} TOUCHDOWN! ${emoji}`).setFontSize('34px').setColor('#e1ff00').setAlpha(1).setScale(1);
+  const celebrationEmoji = s.add.text(W / 2, H / 2 - 92, emoji, { fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif', fontSize: '48px' }).setOrigin(.5).setScrollFactor(0).setDepth(29).setScale(.45);
+  s.tweens.add({ targets: celebrationEmoji, y: H / 2 - 150, scale: 1.2, alpha: 0, duration: 1250, ease: 'Back.Out', onComplete: () => celebrationEmoji.destroy() });
   const root = scorer.root, baseAngle = root.angle, baseY = root.y, baseScale = root.scaleX;
   scorer.ballRing.setVisible(true);
   s.tweens.add({ targets: root, angle: baseAngle + 18, y: baseY - 10, scaleX: baseScale * 1.14, scaleY: baseScale * .82, duration: 180, yoyo: true, repeat: 5, ease: 'Sine.InOut', onComplete: () => { if (root.active) root.setAngle(baseAngle).setPosition(fieldScreenX(scorer.y), fieldScreenY(scorer.x)).setScale(baseScale); } });
   s.tweens.add({ targets: scorer.ballRing, scaleX: 1.3, scaleY: .7, alpha: .7, duration: 240, yoyo: true, repeat: 4 });
   s.cameras.main.stopFollow();
+}
+
+function startMusic(s) {
+  if (s.musicCtx) return;
+  const ctx = s.sound?.context;
+  if (!ctx?.createOscillator || !ctx?.createGain) return;
+  try {
+    ctx.resume()?.catch?.(() => {});
+    s.musicCtx = ctx; s.musicMaster = ctx.createGain(); s.musicMaster.gain.value = .13; s.musicMaster.connect(ctx.destination);
+    s.musicStep = 0; s.musicAt = ctx.currentTime + .06;
+  } catch (_) {
+    s.musicCtx = null; s.musicMaster = null;
+  }
+}
+
+function updateMusic(s) {
+  const ctx = s.musicCtx;
+  if (!ctx || !s.musicMaster || ctx.state === 'suspended') return;
+  if (s.musicAt < ctx.currentTime - .3) s.musicAt = ctx.currentTime + .04;
+  const melody = [392, 0, 494, 0, 587, 0, 494, 0, 392, 0, 330, 0, 370, 0, 330, 0];
+  const bass = [98, 0, 0, 0, 123, 0, 0, 0, 82, 0, 0, 0, 110, 0, 0, 0];
+  while (s.musicAt < ctx.currentTime + .12) {
+    const step = s.musicStep % 16, at = s.musicAt;
+    if (melody[step]) playChipNote(s, melody[step], at, .11, 'square', .16);
+    if (bass[step]) playChipNote(s, bass[step], at, .15, 'triangle', .32);
+    s.musicStep++; s.musicAt += .15;
+  }
+}
+
+function playChipNote(s, frequency, at, duration, waveform, volume) {
+  const ctx = s.musicCtx, oscillator = ctx.createOscillator(), envelope = ctx.createGain();
+  oscillator.type = waveform; oscillator.frequency.setValueAtTime(frequency, at);
+  envelope.gain.setValueAtTime(.0001, at); envelope.gain.linearRampToValueAtTime(volume, at + .012); envelope.gain.exponentialRampToValueAtTime(.0001, at + duration);
+  oscillator.connect(envelope); envelope.connect(s.musicMaster); oscillator.start(at); oscillator.stop(at + duration + .015);
 }
 
 function playCue(s, text, color, time, duration, shake = 0) {
