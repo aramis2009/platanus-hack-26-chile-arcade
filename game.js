@@ -78,7 +78,7 @@ function create() {
   s.helpPlate.lineStyle(1, C.cream, .38).strokeRect(60, 548, 680, 40);
   s.help = s.add.text(W / 2, 568, '', { fontFamily: 'monospace', fontSize: '15px', color: '#f7f9ff', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.prompt = s.add.text(W / 2, 492, 'PRESS START', { fontFamily: 'Arial Black, sans-serif', fontSize: '24px', color: '#ffc857', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.introTitle = s.add.text(W / 2, 70, 'OYE IBAI, ¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '30px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 7 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.introTitle = s.add.text(W / 2, 70, 'OYE PLATANUS, ¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '30px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 7 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.introTag = s.add.text(W / 2, 105, 'PLATANUS HACK 26  /  CHILE', { fontFamily: 'monospace', fontSize: '12px', color: '#ffffff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   const mono = { fontFamily: 'monospace', fontSize: '14px', color: '#f7f9ff', fontStyle: 'bold', lineSpacing: 6 }, big = { fontFamily: 'Arial Black, sans-serif', fontStyle: 'bold', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 5, align: 'center' };
   s.best = s.add.text(W / 2, 530, '', { ...mono, color: '#8fd0ff' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
