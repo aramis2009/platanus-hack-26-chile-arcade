@@ -88,8 +88,8 @@ function create() {
     s.add.text(W / 2, 64, 'CHOOSE YOUR MODE', { ...big, fontSize: '32px' }).setOrigin(.5),
     s.add.text(240, 232, '1 PLAYER\nYOU VS CPU', { ...big, fontSize: '22px' }).setOrigin(.5),
     s.add.text(560, 232, '2 PLAYERS\nP1 VS P2', { ...big, fontSize: '22px' }).setOrigin(.5),
-    s.add.text(122, 330, 'P1   MOVE  WASD\n     PASS  U   LONG  O\n     JUKE / TACKLE  I\n     FIELD GOAL     J\n     PEEL / PUSH    K', mono),
-    s.add.text(432, 330, 'P2   MOVE  ARROWS\n     PASS  R   LONG  Y\n     JUKE / TACKLE  T\n     FIELD GOAL     F\n     PEEL / PUSH    G', mono),
+    s.add.text(122, 330, 'P1   MOVE  WASD\n     PASS  U   LONG  O\n     JUKE / TACKLE  I\n     FIELD GOAL     J\n     PEEL / PUSH    K\n     JUMP           L', mono),
+    s.add.text(432, 330, 'P2   MOVE  ARROWS\n     PASS  R   LONG  Y\n     JUKE / TACKLE  T\n     FIELD GOAL     F\n     PEEL / PUSH    G\n     JUMP           H', mono),
     s.add.text(W / 2, 512, '<  >  CHOOSE     START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }).setOrigin(.5),
     s.add.text(W / 2, 470, 'P2 CAN ALSO JOIN A SOLO MATCH BY MOVING', { ...mono, fontSize: '11px', color: '#c5d9f2' }).setOrigin(.5)
   ];
@@ -335,6 +335,7 @@ function updateInitials(s) {
 }
 
 function makeTeams(s, firstTeam = 0, spot = WORLD / 2) {
+  s.tacklePair = null;
   s.players.flat().forEach(p => { p.root.destroy(); p.roleLabel.destroy(); p.controlLabel.destroy(); }); s.players = [[], []];
   const starts = firstTeam === 0
     ? [[870, 860, 860, 835], [1035, 1010, 1010, 1060]]
@@ -399,7 +400,7 @@ function createPlayer(s, team, number, x, y) {
 }
 
 function playFrame(s, time, dt) {
-  const p2Input = ['P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'P2_2', 'P2_3'].some(k => held(s, k) || s.inputState.pressed[k]);
+  const p2Input = ['P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'P2_2', 'P2_3', 'P2_6'].some(k => held(s, k) || s.inputState.pressed[k]);
   // P2 can still drop in mid-match; once in, their player stops being AI-driven even while idle.
   if (p2Input) s.twoPlayers = true;
   const carrier = s.players[s.possession][0], attack = s.possession === 0 ? 1 : -1;
@@ -420,6 +421,7 @@ function playFrame(s, time, dt) {
         vy = ((held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0)) * s.view;
         if (p === carrier && !s.pass) s.aim = [p, passTarget(s, p, vx, vy)[0]];
         if (p === carrier && !s.pass && s.inputState.pressed[pre + '4'] && attemptFieldGoal(s, p, time)) return;
+        if (p === carrier && !s.pass && s.inputState.pressed[pre + '6'] && time > (p.jumpReady || 0)) { p.jumpStart = time; p.jumpUntil = time + 620; p.jumpReady = time + 1350; p.jumpDodged = false; }
         if (p === carrier && !s.pass && (s.inputState.pressed[pre + '1'] || s.inputState.pressed[pre + '3'])) {
           throwBanana(s, p, vx, vy, time, s.inputState.pressed[pre + '3']);
         }
@@ -454,6 +456,7 @@ function playFrame(s, time, dt) {
       const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.possession ? (p.position === 1 || p.position === 2 ? 205 : 178) : chaseGap > 160 ? 218 : 188;
       p.x = Phaser.Math.Clamp(p.x + vx / mag * speed * dt / 1000, 24, WORLD - 24);
       p.y = Phaser.Math.Clamp(p.y + vy / mag * speed * dt / 1000, TOP + 30, BOTTOM - 27);
+      p.hop = time < (p.jumpUntil || 0) ? Math.sin((time - p.jumpStart) / (p.jumpUntil - p.jumpStart) * Math.PI) * 2 : 0;
       p.moving = Math.hypot(vx, vy) > .15; p.lean = p.moving ? vy / mag * s.view : 0;
       p.banana.setVisible(p === carrier && !s.pass && !s.looseBall);
     }
@@ -472,6 +475,7 @@ function playFrame(s, time, dt) {
     for (const defender of s.players[1 - s.possession]) {
       const distance = Phaser.Math.Distance.Between(current.x, current.y, defender.x, defender.y);
       if (distance < 25 && time > (defender.contactUntil || 0)) {
+        if (time < (current.jumpUntil || 0)) { if (!current.jumpDodged) { current.jumpDodged = true; current.x = Phaser.Math.Clamp(current.x + attack * 24, END + 28, WORLD - END - 28); playCue(s, 'HURDLE!', '#ffc857', time, 500); impactBurst(s, current.x, current.y, C.gold, 10, 1); } break; }
         if (!controlledSet.has(current) && time > s.cd[s.possession] && Math.random() < .3) { special(s, current, s.possession, time); break; }
         defender.contactUntil = time + 850;
         playCrowd(s, .55, .72);
@@ -485,13 +489,13 @@ function playFrame(s, time, dt) {
           break;
         }
         if (roll <= (time < defender.tackleUntil ? 45 : 32)) {
+          startTackleFall(s, current, defender, time);
           dropBanana(s, current.x, current.y, time, 1 - s.possession);
           playCue(s, 'FUMBLE!', '#ef6a60', time, 750); s.cameras.main.flash(180, 213, 43, 30); thud(s, 90, .3, .9); return;
         }
         // The dead-ball pause doubles as hit-stop: the world freezes while both players go down.
         s.cameras.main.shake(160, .009); thud(s, 110, .28, 1);
-        s.tweens.add({ targets: s.cameras.main, zoom: 1.08, duration: 90, yoyo: true });
-        s.tweens.add({ targets: [current, defender], fall: 1, duration: 260, ease: 'Quad.In' });
+        startTackleFall(s, current, defender, time);
         impactBurst(s, current.x, current.y, [C.grass, C.cream, 0x2f8a4c], 14, 1);
         s.phase = 'tackled'; s.tackleUntil = time + 650; s.tackleSpot = current.x; return;
       }
@@ -505,6 +509,12 @@ function playFrame(s, time, dt) {
   const scored = s.possession === 0 ? carrierNow.x >= WORLD - END : carrierNow.x <= END;
   if (!s.looseBall && scored) scoreTouchdown(s, time);
   updateHud(s);
+}
+
+function startTackleFall(s, carrier, tackler, time) {
+  s.tacklePair = { carrier, tackler, start: time };
+  carrier.stunUntil = tackler.stunUntil = time + 650;
+  s.tweens.add({ targets: s.cameras.main, zoom: 1.16, duration: 120, yoyo: true, hold: 220, ease: 'Quad.Out' });
 }
 
 function roleName(position, offense) {
@@ -1078,7 +1088,11 @@ function renderWorld(s, time) {
   }
   const [h0, h1] = humans(s, carrier);
   for (const p of s.players.flat()) {
-    const [sx, sy, k] = proj(s, p.x, p.y), run = (s.phase === 'playing' || s.phase === 'celebrating') && p.moving ? Math.sin(time / 55 + p.number * 2) : 0, hop = p.hop || 0;
+    let [sx, sy, k] = proj(s, p.x, p.y);
+    const pair = s.tacklePair, carrierFall = pair && p === pair.carrier, tackleDive = pair && p === pair.tackler;
+    const elapsed = pair ? time - pair.start : 0, impact = pair ? Phaser.Math.Clamp(Math.min(elapsed / 120, (650 - elapsed) / 180, 1), 0, 1) : 0;
+    const run = (s.phase === 'playing' || s.phase === 'celebrating') && p.moving ? Math.sin(time / 55 + p.number * 2) : 0, hop = p.hop || 0;
+    if (tackleDive) { [sx, sy, k] = proj(s, pair.carrier.x, pair.carrier.y); sy -= 16 * k; }
     p.limbs[0].y = -10 - Math.max(0, run) * 7; p.limbs[1].y = -10 - Math.max(0, -run) * 7;
     p.limbs[2].scaleY = 1 - run * .28; p.limbs[3].scaleY = 1 + run * .28;
     // Dances (0 banana spin, 1 robot, 2 spike) and the stiff arm drive the arms; negative scale points an arm up.
@@ -1086,7 +1100,8 @@ function renderWorld(s, time) {
     if (d != null) { p.limbs[2].scaleY = d === 1 && up ? 1 : -1; p.limbs[3].scaleY = d === 1 ? (up ? -1 : 1) : d ? -1 : 1; }
     if (time < (p.pushUntil || 0)) p.limbs[3].scaleY = -1.3;
     // Nearer players (smaller depth) must draw over farther ones.
-    p.root.setPosition(sx, sy - hop * 18 * k).setScale(k * (1 + hop * .1), k * (1 - hop * .12)).setRotation((p.lean || 0) * .1 + hop * .2 + (p.fall || 0) * 1.3).setDepth(8 + k * .01).setVisible(k < 2.6);
+    const fall = carrierFall ? impact : tackleDive ? Phaser.Math.Clamp(Math.min((elapsed - 65) / 120, (650 - elapsed) / 110, 1), 0, 1) : p.fall || 0, roll = carrierFall ? -1.5 : tackleDive ? 1.55 : 1.3;
+    p.root.setPosition(sx, sy - hop * 18 * k).setScale(k * (1 + hop * .1), k * (1 - hop * .12) * (carrierFall || tackleDive ? 1 - fall * .68 : 1)).setRotation((p.lean || 0) * .1 + hop * .2 + fall * roll).setDepth(8 + k * .01 + (tackleDive ? .08 : 0)).setVisible(k < 2.6);
     if (d === 0) p.root.scaleX *= Math.cos(time / 110);
     const mine = p === h0 || (s.twoPlayers && p === h1);
     p.marks.forEach(m => m.setVisible(mine)); p.face.forEach(f => f.setVisible(p.team !== s.possession));
