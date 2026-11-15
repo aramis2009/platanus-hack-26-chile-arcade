@@ -35,18 +35,22 @@ function create() {
   s.stadiumArt = s.add.graphics().setDepth(-2); drawStadium(s);
   s.fieldArt = s.add.graphics(); s.fieldMarks = []; drawField(s);
   s.fieldMarks.forEach(mark => mark.setVisible(false));
-  s.cameras.main.setBounds(0, 0, WORLD, H).setScroll(WORLD / 2 - W / 2, 0);
+  s.cameras.main.setBounds(0, 0, W, WORLD).setScroll(0, WORLD / 2 - H / 2);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawHudPlate(s.hudArt);
-  s.hudLeft = s.add.text(224, 40, 'P1', { fontFamily: 'monospace', fontSize: '12px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudRight = s.add.text(576, 40, 'CPU', { fontFamily: 'monospace', fontSize: '12px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hud = s.add.text(W / 2, 38, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '27px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudStatus = s.add.text(W / 2, 60, '', { fontFamily: 'monospace', fontSize: '9px', color: '#c1d9c5', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  [s.hudArt, s.hudLeft, s.hudRight, s.hud, s.hudStatus].forEach(item => item.setVisible(false));
+  s.hudHeader = s.add.text(160, 30, 'PLATANANA BOWL', { fontFamily: 'monospace', fontSize: '10px', color: '#e1ff00', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudLeft = s.add.text(64, 60, 'P1', { fontFamily: 'monospace', fontSize: '11px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudRight = s.add.text(255, 60, 'CPU', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hud = s.add.text(160, 61, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudStatus = s.add.text(160, 91, '', { fontFamily: 'monospace', fontSize: '9px', color: '#c1d9c5', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.driveArt = s.add.graphics().setScrollFactor(0).setDepth(19);
+  drawDrivePlate(s.driveArt);
+  s.driveBanner = s.add.text(W / 2, 529, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#07180f', strokeThickness: 5 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(false));
   s.helpPlate = s.add.graphics().setScrollFactor(0).setDepth(19);
-  s.helpPlate.fillStyle(C.ink, .9).fillRect(133, 548, 534, 39);
-  s.helpPlate.lineStyle(1, C.lime, .45).strokeRect(133, 548, 534, 39);
-  s.help = s.add.text(W / 2, 568, '', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.helpPlate.fillStyle(C.ink, .92).fillRect(130, 567, 540, 25);
+  s.helpPlate.lineStyle(1, C.cream, .38).strokeRect(130, 567, 540, 25);
+  s.help = s.add.text(W / 2, 580, '', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.titleArt = s.add.graphics().setScrollFactor(0).setDepth(18);
   drawTitlePlate(s.titleArt);
   s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
@@ -76,28 +80,31 @@ function update(time, delta) {
 
 function startMatch(s, time) {
   s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'playing'; s.turnoverUntil = time + 1700;
-  [s.hudArt, s.hudLeft, s.hudRight, s.hud, s.hudStatus].forEach(item => item.setVisible(true));
+  [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(true));
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
-  makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0], false, .05, .06);
+  makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
 }
 
-function makeTeams(s) {
-  s.players.flat().forEach(p => p.root.destroy()); s.players = [[], []];
-  const starts = [[360, 235, 285, 305], [660, 700, 760, 625]];
+function makeTeams(s, firstTeam = 0) {
+  s.players.flat().forEach(p => { p.root.destroy(); p.roleLabel.destroy(); p.controlLabel.destroy(); }); s.players = [[], []];
+  const starts = firstTeam === 0
+    ? [[870, 860, 860, 835], [1035, 1010, 1010, 1060]]
+    : [[765, 790, 790, 740], [930, 950, 950, 965]];
+  const lanes = [333, 205, 475, 333];
   for (let team = 0; team < 2; team++) {
     for (let i = 0; i < 4; i++) {
-      const p = createPlayer(s, team, i, starts[team][i], i === 0 ? 333 : 225 + i * 58);
+      const p = createPlayer(s, team, i, starts[team][i], lanes[i]);
       s.players[team].push(p);
     }
   }
-  setPossession(s, 0);
+  setPossession(s, firstTeam);
 }
 
 function createPlayer(s, team, number, x, y) {
   const color = team === 0 ? C.lime : C.red;
-  const root = s.add.container(x, y).setDepth(6);
+  const root = s.add.container(fieldScreenX(y), fieldScreenY(x)).setDepth(6);
   const ballRing = s.add.ellipse(0, 14, 50, 32, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
   root.add(s.add.ellipse(0, 31, 38, 10, C.black, .68));
   root.add(s.add.rectangle(-8, 27, 9, 17, 0x10251a)); root.add(s.add.rectangle(8, 27, 9, 17, 0x10251a));
@@ -112,11 +119,9 @@ function createPlayer(s, team, number, x, y) {
   root.add(s.add.rectangle(14, -14, 11, 3, C.cream)); root.add(s.add.rectangle(14, -5, 11, 3, C.cream));
   root.add(s.add.rectangle(20, -10, 3, 11, C.cream));
   root.add(s.add.text(0, 12, String(number + 1), { fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: team === 0 ? '#092218' : '#fff4cf', fontStyle: 'bold' }).setOrigin(.5));
-  const roleLabel = s.add.text(0, -47, '', { fontFamily: 'monospace', fontSize: '10px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5);
-  root.add(roleLabel);
-  const controlLabel = s.add.text(0, -64, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#e1ff00' : '#ff8e7a', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setVisible(false);
-  root.add(controlLabel);
-  const banana = makeBanana(s, 22, -8, .58); root.add(banana); banana.setVisible(false);
+  const roleLabel = s.add.text(fieldScreenX(y), fieldScreenY(x) - 39, '', { fontFamily: 'monospace', fontSize: '10px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
+  const controlLabel = s.add.text(fieldScreenX(y), fieldScreenY(x) - 53, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#e1ff00' : '#ff8e7a', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
+  const banana = makeBanana(s, 0, 25, .58); root.add(banana); banana.setRotation(Math.PI / 2).setVisible(false);
   return { root, banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
 }
 
@@ -137,8 +142,8 @@ function playFrame(s, time, dt) {
       p.ballRing.setVisible(p === carrier && !s.pass);
       if (controlledSet.has(p)) {
         const pre = team === 0 ? 'P1_' : 'P2_';
-        vx = (held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0);
-        vy = (held(s, pre + 'D') ? 1 : 0) - (held(s, pre + 'U') ? 1 : 0);
+        vx = (held(s, pre + 'D') ? 1 : 0) - (held(s, pre + 'U') ? 1 : 0);
+        vy = (held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0);
         if (p === carrier && !s.pass && (s.inputState.pressed[pre + '1'] || s.inputState.pressed[pre + '3'])) {
           throwBanana(s, p, vx, vy, time, s.inputState.pressed[pre + '3']);
         }
@@ -170,7 +175,12 @@ function playFrame(s, time, dt) {
       const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.possession ? (p.position === 1 || p.position === 2 ? 205 : 178) : chaseGap > 160 ? 218 : 188;
       p.x = Phaser.Math.Clamp(p.x + vx / mag * speed * dt / 1000, 24, WORLD - 24);
       p.y = Phaser.Math.Clamp(p.y + vy / mag * speed * dt / 1000, TOP + 30, BOTTOM - 27);
-      p.root.setPosition(p.x, p.y).setScale(team === s.possession ? attack : -attack, 1);
+      const direction = team === s.possession ? attack : -attack;
+      const px = fieldScreenX(p.y), py = fieldScreenY(p.x), angle = direction > 0 ? Math.PI : 0;
+      p.root.setPosition(px, py).setRotation(angle).setDepth(6 + p.x * .001);
+      p.roleLabel.setPosition(px, py - 39).setDepth(10 + p.x * .001);
+      p.controlLabel.setPosition(px, py - 53).setDepth(11 + p.x * .001);
+      p.banana.setPosition(0, -25).setRotation(Math.PI / 2);
       p.banana.setVisible(p === carrier && !s.pass);
     }
   }
@@ -281,8 +291,10 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   const distance = Phaser.Math.Distance.Between(p.x, p.y, targetX, targetY);
   playCue(s, longPass ? 'LONG BANANA!' : 'PASS AWAY!', '#e1ff00', time, 520);
   impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
-  const from = { x: p.x, y: p.y - 8 }, ballScale = longPass ? 1.08 : .92;
-  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y - 8, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.15 : .95), longPass ? 340 : 260, longPass ? 780 : 560), height: longPass ? 18 : 9, angle: Math.atan2(targetY - from.y, targetX - from.x), ballScale, longPass, shadow: s.add.ellipse(from.x, from.y + 7, 29, 10, C.black, .32).setDepth(11), visual: makeBanana(s, from.x, from.y, ballScale) };
+  const from = { x: p.x, y: p.y }, ballScale = longPass ? 1.08 : .92;
+  const fromScreen = { x: fieldScreenX(from.y), y: fieldScreenY(from.x) };
+  const passAngle = Math.atan2(targetX - from.x, (targetY - from.y) * W / (BOTTOM - TOP));
+  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.15 : .95), longPass ? 340 : 260, longPass ? 780 : 560), height: longPass ? 18 : 9, angle: passAngle, ballScale, longPass, shadow: s.add.ellipse(fromScreen.x, fromScreen.y + 7, 29, 10, C.black, .32).setRotation(passAngle).setDepth(11), visual: makeBanana(s, fromScreen.x, fromScreen.y, ballScale) };
   s.pass.visual.setVisible(true).setDepth(12);
 }
 
@@ -291,11 +303,12 @@ function updatePass(s, dt, time) {
   const t = Math.min(1, f.elapsed / f.duration), target = f.target;
   f.x = Phaser.Math.Linear(f.from.x, f.targetX, t); f.y = Phaser.Math.Linear(f.from.y, f.targetY, t);
   const lift = Math.sin(t * Math.PI) * f.height;
-  f.shadow.setPosition(f.x, f.y + 7).setScale(1 + lift * .012, .72);
-  f.visual.setPosition(f.x, f.y - lift).setRotation(f.angle + Math.sin(t * Math.PI * 2) * .035).setScale(f.ballScale + lift * .002);
+  const px = fieldScreenX(f.y), py = fieldScreenY(f.x);
+  f.shadow.setPosition(px, py + 7).setScale(1 + lift * .012, .72);
+  f.visual.setPosition(px, py - lift).setRotation(f.angle + Math.sin(t * Math.PI * 2) * .035).setScale(f.ballScale + lift * .002);
   if (time >= f.trailAt) {
-    const fleck = s.add.ellipse(f.x, f.y - lift, f.longPass ? 12 : 8, 3, time % 2 ? C.gold : C.cream, .56).setRotation(f.angle).setDepth(11);
-    s.tweens.add({ targets: fleck, x: f.x - Math.cos(f.angle) * 25, y: f.y - lift - Math.sin(f.angle) * 25, scale: .15, alpha: 0, duration: 210, onComplete: () => fleck.destroy() });
+    const fleck = s.add.ellipse(px, py - lift, f.longPass ? 12 : 8, 3, time % 2 ? C.gold : C.cream, .56).setRotation(f.angle).setDepth(11);
+    s.tweens.add({ targets: fleck, x: px - Math.cos(f.angle) * 25, y: py - lift - Math.sin(f.angle) * 25, scale: .15, alpha: 0, duration: 210, onComplete: () => fleck.destroy() });
     f.trailAt = time + 48;
   }
   const defenders = s.players[1 - s.possession];
@@ -307,7 +320,7 @@ function updatePass(s, dt, time) {
   }
   if (t >= 1) {
     f.visual.destroy(); f.shadow.destroy(); s.pass = null; target.x = f.x; target.y = f.y;
-    target.root.setPosition(target.x, target.y);
+    target.root.setPosition(fieldScreenX(target.y), fieldScreenY(target.x));
     setPossession(s, s.possession, target); s.turnoverUntil = time + 1100;
     playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, target.x, target.y, C.gold);
   }
@@ -322,7 +335,7 @@ function setPossession(s, team, player) {
   }
   for (const p of s.players.flat()) p.banana.setVisible(false);
   group[0].banana.setVisible(!s.pass);
-  if (s.cameras?.main) s.cameras.main.startFollow(group[0], false, .05, .06);
+  if (s.cameras?.main) s.cameras.main.startFollow(group[0].root, false, .06, .06);
 }
 
 function nearestPlayer(players, target) { return players.slice(1).reduce((a, b) => Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y) < Phaser.Math.Distance.Between(b.x, b.y, target.x, target.y) ? a : b, players[1]); }
@@ -337,9 +350,9 @@ function scoreTouchdown(s, time) {
     s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.possession + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setAlpha(1);
     s.cameras.main.stopFollow(); return;
   }
-  const next = 1 - s.possession; s.possession = next; s.pass = null; makeTeams(s); s.turnoverUntil = time + 1500;
+  const next = 1 - s.possession; s.pass = null; makeTeams(s, next); s.turnoverUntil = time + 1500;
   s.message.setText('TOUCHDOWN!').setAlpha(1); s.messageUntil = time + 1050;
-  s.cameras.main.startFollow(s.players[s.possession][0], false, .05, .06);
+  s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
 }
 
 function playCue(s, text, color, time, duration, shake = 0) {
@@ -349,6 +362,7 @@ function playCue(s, text, color, time, duration, shake = 0) {
 }
 
 function impactBurst(s, x, y, color) {
+  const sx = fieldScreenX(y), sy = fieldScreenY(x); x = sx; y = sy;
   for (let i = 0; i < 8; i++) {
     const angle = i * Math.PI / 4, spark = s.add.circle(x, y, 4, color, .95).setDepth(14);
     s.tweens.add({ targets: spark, x: x + Math.cos(angle) * 48, y: y + Math.sin(angle) * 48, scale: .35, alpha: 0, duration: 380, onComplete: () => spark.destroy() });
@@ -357,11 +371,12 @@ function impactBurst(s, x, y, color) {
 
 function updateHud(s) {
   const carrier = s.players[s.possession][0], dir = s.possession === 0 ? 1 : -1;
-  const yards = Math.floor((dir > 0 ? WORLD - END - carrier.x : carrier.x - END) / 17);
+  const yards = Math.floor((dir > 0 ? WORLD - END - carrier.x : carrier.x - END) / 15.4);
   const mode = s.twoPlayers ? 'P1 VS P2' : 'P1 VS CPU';
   s.hudLeft.setText('P1'); s.hudRight.setText(s.twoPlayers ? 'P2' : 'CPU');
   s.hud.setText(`${s.scores[0]}  —  ${s.scores[1]}`);
-  s.hudStatus.setText(`${mode}    ·    ${Math.max(0, yards)} YDS TO GO`);
+  s.hudStatus.setText(`${mode}    ·    FIRST TO 3 TOUCHDOWNS`);
+  s.driveBanner.setText(`${Math.max(0, yards)} YDS TO END ZONE`);
   if (!s.twoPlayers && s.possession === 1) s.help.setText('P1 MOVE WASD   TACKLE I     CPU RUNS / PASSES');
   else if (!s.twoPlayers) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     CPU DEFENDS');
   else if (s.possession === 0) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     P2 MOVE ARROWS   TACKLE T');
@@ -370,81 +385,74 @@ function updateHud(s) {
 
 function drawField(s) {
   const g = s.fieldArt; g.clear();
-  g.fillStyle(C.grass); g.fillRect(0, TOP, WORLD, BOTTOM - TOP);
-  for (let x = END; x < WORLD - END; x += 200) {
-    g.fillStyle((x / 200) % 2 ? 0x1c5739 : 0x164a32, .52);
-    g.fillRect(x, TOP + 2, 100, BOTTOM - TOP - 4);
+  g.fillStyle(C.grass); g.fillRect(18, 0, W - 36, WORLD);
+  for (let y = END; y < WORLD - END; y += 154) {
+    g.fillStyle(Math.floor(y / 154) % 2 ? 0x1c5739 : 0x164a32, .6); g.fillRect(20, y, W - 40, 77);
   }
-  const zoneLeft = [0, WORLD - END];
-  for (const x of zoneLeft) {
-    g.fillStyle(0x0d3b28); g.fillRect(x, TOP, END, BOTTOM - TOP);
-    for (let y = TOP + 18; y < BOTTOM - 40; y += 48) {
-      g.lineStyle(14, 0x1c5639, .6);
-      g.lineBetween(x + 12, y, x + END - 12, y + 32);
+  for (const y of [0, WORLD - END]) {
+    g.fillStyle(0x0d3b28); g.fillRect(18, y, W - 36, END);
+    for (let x = 38; x < W - 30; x += 38) {
+      g.lineStyle(12, 0x1c5639, .58); g.lineBetween(x, y + 10, x + 24, y + END - 10);
     }
-    g.lineStyle(2, C.cream, .8); g.strokeRect(x + 5, TOP + 5, END - 10, BOTTOM - TOP - 10);
+    g.lineStyle(3, C.cream, .82); g.strokeRect(24, y + 6, W - 48, END - 12);
+    addFieldMark(s, s.add.text(W / 2, y + END / 2, 'PLATANUS HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#e1ff00', fontStyle: 'bold', stroke: '#0d3b28', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
   }
-  g.lineStyle(2, C.cream, .6); g.strokeRect(0, TOP, WORLD, BOTTOM - TOP);
-  g.lineStyle(2, C.cream, .66);
-  for (let x = END; x <= WORLD - END; x += 100) {
-    g.lineBetween(x, TOP, x, BOTTOM);
-    for (let y = TOP + 28; y < BOTTOM - 18; y += 52) { g.lineBetween(x - 5, y, x + 5, y); g.lineBetween(x - 5, y, x - 5, y + 8); }
+  g.lineStyle(3, C.cream, .76); g.strokeRect(18, 0, W - 36, WORLD);
+  g.lineStyle(2, C.cream, .68);
+  for (let y = END; y <= WORLD - END; y += 77) {
+    const tenYardLine = Math.round((y - END) / 77) % 2 === 0;
+    g.lineStyle(tenYardLine ? 2 : 1, C.cream, tenYardLine ? .76 : .34);
+    g.lineBetween(20, y, W - 20, y);
+    g.lineBetween(220, y - 5, 248, y - 5); g.lineBetween(220, y + 5, 248, y + 5);
+    g.lineBetween(W - 248, y - 5, W - 220, y - 5); g.lineBetween(W - 248, y + 5, W - 220, y + 5);
   }
-  g.lineStyle(3, C.lime, .7); g.lineBetween(END, TOP, END, BOTTOM); g.lineBetween(WORLD - END, TOP, WORLD - END, BOTTOM);
-  for (let i = 0; i < 2; i++) {
-    const x = i ? WORLD - END / 2 : END / 2, y = (TOP + BOTTOM) / 2;
-    addFieldMark(s, s.add.text(x, y, 'PLATANUS HACK 26', { fontFamily: 'monospace', fontSize: '21px', color: '#e1ff00', fontStyle: 'bold', stroke: '#0d3b28', strokeThickness: 5 }).setOrigin(.5).setRotation(-Math.PI / 2).setDepth(2));
+  g.lineStyle(4, C.lime, .88); g.lineBetween(18, END, W - 18, END); g.lineBetween(18, WORLD - END, W - 18, WORLD - END);
+  for (let y = END + 154; y < WORLD - END; y += 154) {
+    const yards = Math.round((y - END) / 15.4);
+    s.add.text(70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 3 }).setOrigin(.5).setDepth(2);
+    s.add.text(W - 70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 3 }).setOrigin(.5).setDepth(2);
   }
-  const midX = WORLD / 2, midY = (TOP + BOTTOM) / 2;
-  addFieldMark(s, s.add.ellipse(midX, midY, 218, 116, C.ink, 0).setStrokeStyle(4, C.lime, .72).setDepth(1));
-  addFieldMark(s, s.add.ellipse(midX, midY, 198, 98, C.ink, 0).setStrokeStyle(1, C.cream, .55).setDepth(1));
-  addFieldMark(s, s.add.text(midX, midY - 13, 'HACK 26', { fontFamily: 'monospace', fontSize: '27px', color: '#e1ff00', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
-  addFieldMark(s, s.add.text(midX, midY + 20, 'aramis2009', { fontFamily: 'monospace', fontSize: '13px', color: '#fff4cf', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2));
-  g.fillStyle(0x0b2518); g.fillRect(0, BOTTOM, WORLD, H - BOTTOM);
-  g.fillStyle(C.lime, .78); g.fillRect(0, BOTTOM, WORLD, 3);
-  for (let x = 30; x < WORLD; x += 96) {
-    g.fillStyle(x % 192 ? 0x153f2a : 0x1d5538, .9); g.fillRect(x, BOTTOM + 14, 54, 22);
-    g.lineStyle(1, C.cream, .25); g.strokeRect(x, BOTTOM + 14, 54, 22);
-  }
-  g.fillStyle(C.cream, .7);
-  for (let x = END + 50; x < WORLD - END; x += 100) {
-    const n = Math.round((x - END) / 17);
-    s.add.text(x, TOP + 11, String(n), { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf' }).setOrigin(.5).setDepth(1);
-    s.add.text(x, BOTTOM - 13, String(n), { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf' }).setOrigin(.5).setDepth(1);
-  }
+  const midY = WORLD / 2;
+  addFieldMark(s, s.add.ellipse(W / 2, midY, 270, 160, C.ink, .04).setStrokeStyle(4, C.lime, .65).setDepth(1));
+  addFieldMark(s, s.add.text(W / 2, midY - 19, 'HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '31px', color: '#e1ff00', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
+  addFieldMark(s, s.add.text(W / 2, midY + 22, 'aramis2009', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2));
 }
 
 function drawStadium(s) {
   const g = s.stadiumArt;
-  g.fillStyle(C.black); g.fillRect(0, 0, WORLD, H);
-  g.fillStyle(0x0c281b); g.fillRect(0, 0, WORLD, TOP);
-  g.fillStyle(0x163d29); g.fillRect(0, 42, WORLD, 72);
-  g.fillStyle(0x205437); g.fillRect(0, 51, WORLD, 4);
-  g.fillStyle(0x0a2117); g.fillRect(0, 115, WORLD, 30);
-  g.lineStyle(2, C.lime, .3); g.lineBetween(0, 116, WORLD, 116);
-  for (let x = 16; x < WORLD; x += 46) {
-    const row = Math.floor(x / 46) % 3;
-    g.fillStyle(row === 0 ? C.lime : row === 1 ? C.red : C.cream, .75);
-    g.fillCircle(x, 68 + row * 11, 2.2); g.fillCircle(x + 18, 88 - row * 4, 2);
+  g.fillStyle(C.black); g.fillRect(0, 0, W, WORLD);
+  g.fillStyle(0x102b1d); g.fillRect(0, 0, W, WORLD);
+  for (let y = 0; y < WORLD; y += 72) {
+    g.fillStyle(0x07180f); g.fillRect(0, y, 18, 64); g.fillRect(W - 18, y, 18, 64);
+    g.fillStyle(0x254d36); g.fillRect(3, y + 8, 12, 4); g.fillRect(W - 15, y + 8, 12, 4);
+    for (let x = 22; x < 48; x += 12) {
+      const color = Math.floor((x + y) / 12) % 3 === 0 ? C.lime : Math.floor((x + y) / 12) % 3 === 1 ? C.red : C.cream;
+      g.fillStyle(color, .75); g.fillCircle(x, y + 28, 2); g.fillCircle(W - x, y + 47, 2);
+    }
   }
-  for (let x = 40; x < WORLD; x += 240) {
-    g.fillStyle(C.ink, .95); g.fillRect(x, 16, 86, 25);
-    g.lineStyle(2, C.lime, .72); g.strokeRect(x, 16, 86, 25);
-    g.fillStyle(C.gold, .8); g.fillCircle(x + 16, 29, 5); g.fillCircle(x + 70, 29, 5);
-    g.lineStyle(1, C.cream, .55); g.lineBetween(x + 28, 29, x + 58, 29);
-  }
-  g.fillStyle(0x0b2518); g.fillRect(0, BOTTOM, WORLD, H - BOTTOM);
-  g.fillStyle(0x123927); g.fillRect(0, BOTTOM + 7, WORLD, 5);
+  g.fillStyle(0x183d29); g.fillRect(18, 0, 8, WORLD); g.fillRect(W - 26, 0, 8, WORLD);
+  g.lineStyle(1, C.lime, .26); g.lineBetween(17, 0, 17, WORLD); g.lineBetween(W - 18, 0, W - 18, WORLD);
 }
 
 function drawHudPlate(g) {
-  g.fillStyle(C.black, .88); g.fillRect(188, 10, 424, 66);
-  g.fillStyle(C.lime, .94); g.fillRect(188, 10, 72, 66);
-  g.fillStyle(C.red, .94); g.fillRect(540, 10, 72, 66);
-  g.fillStyle(C.ink, .95); g.fillRect(260, 10, 280, 66);
-  g.lineStyle(2, C.cream, .75); g.strokeRect(188, 10, 424, 66);
-  g.lineStyle(1, C.lime, .55); g.lineBetween(260, 10, 260, 76); g.lineBetween(540, 10, 540, 76);
-  g.lineStyle(2, C.gold, .8); g.lineBetween(376, 20, 424, 20); g.lineBetween(376, 66, 424, 66);
+  g.fillStyle(C.black, .96); g.fillRect(18, 15, 280, 101);
+  g.fillStyle(0x57718d, .95); g.fillRect(18, 15, 280, 9); g.fillRect(18, 15, 12, 101);
+  g.fillStyle(C.ink, .96); g.fillRect(34, 27, 250, 78);
+  g.fillStyle(C.lime, .96); g.fillRect(38, 47, 55, 48);
+  g.fillStyle(C.red, .96); g.fillRect(225, 47, 55, 48);
+  g.lineStyle(2, C.cream, .85); g.strokeRect(18, 15, 280, 101);
+  g.lineStyle(1, C.blue, .65); g.lineBetween(34, 27, 284, 27); g.lineBetween(34, 105, 284, 105);
+  g.lineStyle(2, C.gold, .82); g.lineBetween(128, 103, 192, 103);
+}
+
+function drawDrivePlate(g) {
+  g.fillStyle(C.black, .96); g.fillRect(132, 494, 536, 65);
+  g.fillStyle(0x57718d, .95); g.fillRect(132, 494, 24, 8); g.fillRect(644, 551, 24, 8);
+  g.fillStyle(C.ink, .96); g.fillRect(145, 503, 510, 47);
+  g.lineStyle(2, C.cream, .82); g.strokeRect(132, 494, 536, 65);
+  g.lineStyle(1, C.blue, .5);
+  for (let x = 165; x < 640; x += 34) g.lineBetween(x, 503, x, 550);
+  g.lineStyle(2, C.gold, .82); g.lineBetween(148, 548, 652, 548);
 }
 
 function drawTitlePlate(g) {
@@ -476,3 +484,5 @@ function makeBanana(s, x, y, scale) {
 }
 
 function held(s, key) { return s.inputState.held[key] === true; }
+function fieldScreenX(y) { return (y - TOP) * W / (BOTTOM - TOP); }
+function fieldScreenY(x) { return x; }
