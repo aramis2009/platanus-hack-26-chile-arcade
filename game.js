@@ -31,7 +31,7 @@ function create() {
   const up = e => { const c = KEY_TO_ARCADE[(e.key || '').toLowerCase()]; if (c) s.inputState.held[c] = false; };
   window.addEventListener('keydown', down); window.addEventListener('keyup', up);
   s.events.once('shutdown', () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); });
-  s.phase = 'title'; s.players = [[], []]; s.possession = 0; s.scores = [0, 0]; s.turnoverUntil = 0; s.pass = null; s.twoPlayers = false; s.cpuThrowAt = 0;
+  s.phase = 'title'; s.players = [[], []]; s.possession = 0; s.scores = [0, 0]; s.turnoverUntil = 0; s.pass = null; s.twoPlayers = false; s.cpuThrowAt = 0; s.down = 1; s.driveStart = WORLD / 2;
   s.stadiumArt = s.add.graphics().setDepth(-2); drawStadium(s);
   s.fieldArt = s.add.graphics(); s.fieldMarks = []; drawField(s);
   s.fieldMarks.forEach(mark => mark.setVisible(false));
@@ -75,6 +75,8 @@ function update(time, delta) {
     else playFrame(s, time, dt);
   } else if (s.phase === 'countdown') {
     updateCountdown(s, time);
+  } else if (s.phase === 'spotting') {
+    if (time >= s.spotUntil) beginCountdown(s, time);
   } else if (s.phase === 'celebrating') {
     updateCelebration(s, time);
   } else if (s.phase === 'paused') {
@@ -84,13 +86,13 @@ function update(time, delta) {
 }
 
 function startMatch(s, time) {
-  s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700;
+  s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700; s.down = 1; s.driveStart = WORLD / 2;
   s.pendingWinner = null;
   [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(true));
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
-  makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
+  makeTeams(s, 0, s.driveStart); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
   beginCountdown(s, time);
 }
 
@@ -117,15 +119,18 @@ function updateCelebration(s, time) {
     s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.pendingWinner + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setFontSize('28px').setColor('#e1ff00').setScale(1);
     s.cameras.main.stopFollow(); return;
   }
-  makeTeams(s, s.nextTeam); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
+  s.down = 1; s.driveStart = WORLD / 2;
+  makeTeams(s, s.nextTeam, s.driveStart); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
   beginCountdown(s, time);
 }
 
-function makeTeams(s, firstTeam = 0) {
+function makeTeams(s, firstTeam = 0, spot = WORLD / 2) {
   s.players.flat().forEach(p => { p.root.destroy(); p.roleLabel.destroy(); p.controlLabel.destroy(); }); s.players = [[], []];
   const starts = firstTeam === 0
     ? [[870, 860, 860, 835], [1035, 1010, 1010, 1060]]
     : [[765, 790, 790, 740], [930, 950, 950, 965]];
+  const anchor = firstTeam === 0 ? 870 : 930, shift = spot - anchor;
+  for (const team of starts) for (let i = 0; i < team.length; i++) team[i] = Phaser.Math.Clamp(team[i] + shift, END + 36, WORLD - END - 36);
   const lanes = [333, 205, 475, 333];
   for (let team = 0; team < 2; team++) {
     for (let i = 0; i < 4; i++) {
@@ -227,9 +232,8 @@ function playFrame(s, time, dt) {
     for (const defender of s.players[1 - s.possession]) {
       const distance = Phaser.Math.Distance.Between(current.x, current.y, defender.x, defender.y);
       if (distance < (time < defender.tackleUntil ? 39 : 25)) {
-        setPossession(s, 1 - s.possession, defender); s.turnoverUntil = time + 1400;
-        playCue(s, 'TACKLED! BANANA STOLEN!', '#ff8e7a', time, 850);
-        impactBurst(s, defender.x, defender.y, C.red); break;
+        impactBurst(s, defender.x, defender.y, C.red);
+        finishPlay(s, current.x, time, 'TACKLED!'); return;
       }
     }
   }
@@ -351,12 +355,15 @@ function updatePass(s, dt, time) {
   const defenders = s.players[1 - s.possession];
   for (const d of defenders) {
     if (Phaser.Math.Distance.Between(d.x, d.y - 10, f.x, f.y) < 25) {
-      f.visual.destroy(); f.shadow.destroy(); s.pass = null; setPossession(s, 1 - s.possession, d); s.turnoverUntil = time + 1400;
+      f.visual.destroy(); f.shadow.destroy(); s.pass = null; setPossession(s, 1 - s.possession, d); s.down = 1; s.driveStart = f.x; s.turnoverUntil = time + 1400;
       playCue(s, 'INTERCEPTED!', '#ff8e7a', time, 900); impactBurst(s, d.x, d.y, C.red); return;
     }
   }
   if (t >= 1) {
     f.visual.destroy(); f.shadow.destroy(); s.pass = null; target.x = f.x; target.y = f.y;
+    if (Phaser.Math.Between(1, 100) <= 10) {
+      finishPlay(s, f.from.x, time, 'INCOMPLETE!'); return;
+    }
     target.root.setPosition(fieldScreenX(target.y), fieldScreenY(target.x));
     setPossession(s, s.possession, target); s.turnoverUntil = time + 1100;
     playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, target.x, target.y, C.gold);
@@ -373,6 +380,25 @@ function setPossession(s, team, player) {
   for (const p of s.players.flat()) p.banana.setVisible(false);
   group[0].banana.setVisible(!s.pass);
   if (s.cameras?.main) s.cameras.main.startFollow(group[0].root, false, .06, .06);
+}
+
+function finishPlay(s, spot, time, result) {
+  const attack = s.possession === 0 ? 1 : -1;
+  const gained = (spot - s.driveStart) * attack;
+  const firstDown = gained >= 154;
+  const turnover = !firstDown && s.down >= 4;
+  const nextTeam = turnover ? 1 - s.possession : s.possession;
+  if (firstDown || turnover) { s.down = 1; s.driveStart = spot; }
+  else s.down++;
+  s.pass = null; s.turnoverUntil = time + 700;
+  makeTeams(s, nextTeam, spot);
+  let call = result;
+  if (turnover) call = 'TURNOVER ON DOWNS!';
+  else if (firstDown) call = 'FIRST DOWN!';
+  else if (result === 'INCOMPLETE!') call = 'INCOMPLETE!';
+  playCue(s, call, turnover ? '#ff8e7a' : '#e1ff00', time, 850);
+  updateHud(s);
+  s.phase = 'spotting'; s.spotUntil = time + 850;
 }
 
 function nearestPlayer(players, target) { return players.slice(1).reduce((a, b) => Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y) < Phaser.Math.Distance.Between(b.x, b.y, target.x, target.y) ? a : b, players[1]); }
@@ -411,14 +437,18 @@ function impactBurst(s, x, y, color) {
 function updateHud(s) {
   const carrier = s.players[s.possession][0], dir = s.possession === 0 ? 1 : -1;
   const yards = Math.floor((dir > 0 ? WORLD - END - carrier.x : carrier.x - END) / 15.4);
+  const toGo = Math.max(1, Math.ceil((154 - (carrier.x - s.driveStart) * dir) / 15.4));
+  const downName = ['1ST', '2ND', '3RD', '4TH'][s.down - 1];
   const mode = s.twoPlayers ? 'P1 VS P2' : 'P1 VS CPU';
   s.hudLeft.setText('P1'); s.hudRight.setText(s.twoPlayers ? 'P2' : 'CPU');
   s.hud.setText(`${s.scores[0]}  —  ${s.scores[1]}`);
-  s.hudStatus.setText(`${mode}    ·    FIRST TO 3 TOUCHDOWNS`);
+  s.hudStatus.setText(`${mode}    ·    ${downName} & ${toGo} TO GO`);
   s.driveBanner.setText(`${Math.max(0, yards)} YDS TO END ZONE`);
   s.playLine.clear();
-  if (s.phase === 'playing' || s.phase === 'countdown' || s.phase === 'celebrating') {
+  if (s.phase === 'playing' || s.phase === 'countdown' || s.phase === 'spotting' || s.phase === 'celebrating') {
     const y = carrier.x;
+    const gainLine = Phaser.Math.Clamp(s.driveStart + dir * 154, END, WORLD - END);
+    s.playLine.lineStyle(2, C.lime, .72); s.playLine.lineBetween(24, gainLine, W - 24, gainLine);
     s.playLine.lineStyle(3, C.red, .95); s.playLine.lineBetween(24, y, W - 24, y);
     s.playLine.lineStyle(1, C.cream, .88); s.playLine.lineBetween(24, y - 5, W - 24, y - 5);
     s.playLine.fillStyle(C.red, 1); s.playLine.fillTriangle(30, y - 8, 42, y, 30, y + 8);
