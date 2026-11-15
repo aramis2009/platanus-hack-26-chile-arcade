@@ -89,7 +89,6 @@ function create() {
 
 function update(time, delta) {
   const s = this, dt = Math.min(delta, 40);
-  updateMusic(s);
   if (s.phase === 'title') {
     s.prompt.setAlpha(.68 + Math.sin(time / 300) * .25);
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) showLoading(s, time);
@@ -124,7 +123,7 @@ function startMatch(s, time) {
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
-  startMusic(s);
+  startStadiumAudio(s);
   makeTeams(s, 0, s.driveStart); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
   beginCountdown(s, time);
 }
@@ -542,48 +541,26 @@ function scoreTouchdown(s, time) {
   s.tweens.add({ targets: s.cameras.main, zoom: 1.28, duration: 360, ease: 'Sine.Out', yoyo: true, hold: 1320 });
 }
 
-function startMusic(s) {
-  if (s.musicCtx) return;
+function startStadiumAudio(s) {
+  if (s.stadiumAudioCtx) return;
   const ctx = s.sound?.context;
-  if (!ctx?.createOscillator || !ctx?.createGain) return;
+  if (!ctx?.createBuffer || !ctx?.createGain || !ctx?.createBiquadFilter) return;
   try {
     ctx.resume()?.catch?.(() => {});
-    s.musicCtx = ctx; s.musicMaster = ctx.createGain(); s.musicMaster.gain.value = .2; s.musicMaster.connect(ctx.destination);
+    s.stadiumAudioCtx = ctx; s.stadiumMaster = ctx.createGain(); s.stadiumMaster.gain.value = .2; s.stadiumMaster.connect(ctx.destination);
     s.crowdBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const noise = s.crowdBuffer.getChannelData(0); let low = 0;
     for (let i = 0; i < noise.length; i++) { low += (Math.random() * 2 - 1 - low) * .045; noise[i] = low * 3; }
     const crowd = ctx.createBufferSource(), crowdFilter = ctx.createBiquadFilter(), crowdGain = ctx.createGain();
     crowd.buffer = s.crowdBuffer; crowd.loop = true; crowdFilter.type = 'bandpass'; crowdFilter.frequency.value = 720; crowdFilter.Q.value = .55; crowdGain.gain.value = .06;
-    crowd.connect(crowdFilter); crowdFilter.connect(crowdGain); crowdGain.connect(s.musicMaster); crowd.start();
-    s.musicStep = 0; s.musicAt = ctx.currentTime + .06;
+    crowd.connect(crowdFilter); crowdFilter.connect(crowdGain); crowdGain.connect(s.stadiumMaster); crowd.start();
   } catch (_) {
-    s.musicCtx = null; s.musicMaster = null;
+    s.stadiumAudioCtx = null; s.stadiumMaster = null;
   }
-}
-
-function updateMusic(s) {
-  const ctx = s.musicCtx;
-  if (!ctx || !s.musicMaster || ctx.state === 'suspended') return;
-  if (s.musicAt < ctx.currentTime - .3) s.musicAt = ctx.currentTime + .04;
-  const melody = [392, 0, 494, 0, 587, 0, 494, 0, 392, 0, 330, 0, 370, 0, 330, 0];
-  const bass = [98, 0, 0, 0, 123, 0, 0, 0, 82, 0, 0, 0, 110, 0, 0, 0];
-  while (s.musicAt < ctx.currentTime + .12) {
-    const step = s.musicStep % 16, at = s.musicAt;
-    if (melody[step]) playChipNote(s, melody[step], at, .11, 'square', .16);
-    if (bass[step]) playChipNote(s, bass[step], at, .15, 'triangle', .32);
-    s.musicStep++; s.musicAt += .15;
-  }
-}
-
-function playChipNote(s, frequency, at, duration, waveform, volume) {
-  const ctx = s.musicCtx, oscillator = ctx.createOscillator(), envelope = ctx.createGain();
-  oscillator.type = waveform; oscillator.frequency.setValueAtTime(frequency, at);
-  envelope.gain.setValueAtTime(.0001, at); envelope.gain.linearRampToValueAtTime(volume, at + .012); envelope.gain.exponentialRampToValueAtTime(.0001, at + duration);
-  oscillator.connect(envelope); envelope.connect(s.musicMaster); oscillator.start(at); oscillator.stop(at + duration + .015);
 }
 
 function playCrowd(s, intensity, duration) {
-  const ctx = s.musicCtx;
+  const ctx = s.stadiumAudioCtx;
   if (!ctx || !s.crowdBuffer || ctx.state === 'suspended') return;
   const start = ctx.currentTime + .02, source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), envelope = ctx.createGain();
   const peak = .12 * intensity;
@@ -591,7 +568,7 @@ function playCrowd(s, intensity, duration) {
   filter.frequency.setValueAtTime(480, start); filter.frequency.linearRampToValueAtTime(1350, start + duration * .65);
   envelope.gain.setValueAtTime(.0001, start); envelope.gain.exponentialRampToValueAtTime(peak, start + Math.min(.28, duration * .3));
   envelope.gain.setValueAtTime(peak, start + duration * .55); envelope.gain.exponentialRampToValueAtTime(.0001, start + duration);
-  source.connect(filter); filter.connect(envelope); envelope.connect(s.musicMaster); source.start(start); source.stop(start + duration + .04);
+  source.connect(filter); filter.connect(envelope); envelope.connect(s.stadiumMaster); source.start(start); source.stop(start + duration + .04);
 }
 
 function playCue(s, text, color, time, duration, shake = 0) {
