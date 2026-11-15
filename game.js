@@ -117,7 +117,7 @@ function update(time, delta) {
 
 function startMatch(s, time) {
   s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700; s.down = 1; s.driveStart = WORLD / 2;
-  s.pendingWinner = null;
+  s.pendingWinner = null; s.nearGoalCheered = false;
   [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner, s.helpPlate, s.help].forEach(item => item.setVisible(true));
   [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana, s.controlsArt, s.controlsTitle, s.controlsP1, s.controlsP2, s.controlsCredit, s.controlsPrompt].forEach(item => item.setVisible(false));
   s.cover.setVisible(false);
@@ -288,6 +288,7 @@ function playFrame(s, time, dt) {
       const distance = Phaser.Math.Distance.Between(current.x, current.y, defender.x, defender.y);
       if (distance < 25 && time > (defender.contactUntil || 0)) {
         defender.contactUntil = time + 850;
+        playCrowd(s, .55, .72);
         impactBurst(s, defender.x, defender.y, C.red);
         if (Phaser.Math.Between(1, 100) <= (time < defender.tackleUntil ? 45 : 18)) {
           dropBanana(s, current.x, current.y, time, 1 - s.possession);
@@ -302,6 +303,9 @@ function playFrame(s, time, dt) {
   }
   if (s.messageUntil && time > s.messageUntil) { s.message.setText(''); s.messageUntil = 0; }
   const carrierNow = s.players[s.possession][0];
+  const yardsToScore = s.possession === 0 ? WORLD - END - carrierNow.x : carrierNow.x - END;
+  if (yardsToScore <= 240 && !s.nearGoalCheered) { playCrowd(s, .9, 1.8); s.nearGoalCheered = true; }
+  else if (yardsToScore > 340) s.nearGoalCheered = false;
   const scored = s.possession === 0 ? carrierNow.x >= WORLD - END : carrierNow.x <= END;
   if (!s.looseBall && scored) scoreTouchdown(s, time);
   updateHud(s);
@@ -401,19 +405,21 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   const miss = Phaser.Math.FloatBetween(-spread, spread);
   const targetX = Phaser.Math.Clamp(baseX - aimY * miss, END + 18, WORLD - END - 18);
   const targetY = Phaser.Math.Clamp(baseY + aimX * miss, TOP + 26, BOTTOM - 24);
+  const yardsToGoal = s.possession === 0 ? WORLD - END - targetX : targetX - END;
   const distance = Phaser.Math.Distance.Between(p.x, p.y, targetX, targetY);
   playCue(s, longPass ? 'LONG PASS!' : 'PASS!', '#e1ff00', time, 520);
   impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
   const from = { x: p.x, y: p.y }, ballScale = longPass ? 1.08 : .92;
   const fromScreen = { x: fieldScreenX(from.y), y: fieldScreenY(from.x) };
   const passAngle = Math.atan2(targetX - from.x, (targetY - from.y) * W / (BOTTOM - TOP));
-  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.15 : .95), longPass ? 340 : 260, longPass ? 780 : 560), height: longPass ? 18 : 9, angle: passAngle, ballScale, longPass, shadow: s.add.ellipse(fromScreen.x, fromScreen.y + 7, 29, 10, C.black, .32).setRotation(passAngle).setDepth(11), visual: makeBanana(s, fromScreen.x, fromScreen.y, ballScale) };
+  s.pass = { from, target, targetX, targetY, x: p.x, y: p.y, elapsed: 0, trailAt: 0, duration: Phaser.Math.Clamp(distance * (longPass ? 1.15 : .95), longPass ? 340 : 260, longPass ? 780 : 560), height: longPass ? 18 : 9, angle: passAngle, ballScale, longPass, nearGoal: yardsToGoal <= 240, cheerPlayed: false, shadow: s.add.ellipse(fromScreen.x, fromScreen.y + 7, 29, 10, C.black, .32).setRotation(passAngle).setDepth(11), visual: makeBanana(s, fromScreen.x, fromScreen.y, ballScale) };
   s.pass.visual.setVisible(true).setDepth(12);
 }
 
 function updatePass(s, dt, time) {
   const f = s.pass; f.elapsed += dt;
   const t = Math.min(1, f.elapsed / f.duration), target = f.target;
+  if (f.nearGoal && !f.cheerPlayed && t >= .72) { playCrowd(s, 1, 2.2); f.cheerPlayed = true; }
   f.x = Phaser.Math.Linear(f.from.x, f.targetX, t); f.y = Phaser.Math.Linear(f.from.y, f.targetY, t);
   const lift = Math.sin(t * Math.PI) * f.height;
   const px = fieldScreenX(f.y), py = fieldScreenY(f.x);
@@ -481,6 +487,7 @@ function updateLooseBall(s, time) {
 }
 
 function setPossession(s, team, player) {
+  if (team !== s.possession) s.nearGoalCheered = false;
   s.possession = team;
   s.cpuThrowAt = 0;
   const group = s.players[team];
@@ -522,6 +529,7 @@ function scoreTouchdown(s, time) {
   s.phase = 'celebrating'; s.nextTeam = 1 - s.possession;
   s.pendingWinner = s.scores[s.possession] >= 3 ? s.possession : null;
   s.celebrationUntil = time + 2200; s.messageUntil = 0;
+  s.nearGoalCheered = false; playCrowd(s, 1.35, 2.8);
   const emoji = TOUCHDOWN_EMOJIS[Phaser.Math.Between(0, TOUCHDOWN_EMOJIS.length - 1)];
   s.message.setText(`${emoji} TOUCHDOWN! ${emoji}`).setFontSize('34px').setColor('#e1ff00').setAlpha(1).setScale(1);
   const celebrationEmoji = s.add.text(W / 2, H / 2 - 92, emoji, { fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif', fontSize: '48px' }).setOrigin(.5).setScrollFactor(0).setDepth(29).setScale(.45);
@@ -531,6 +539,7 @@ function scoreTouchdown(s, time) {
   s.tweens.add({ targets: root, angle: baseAngle + 18, y: baseY - 10, scaleX: baseScale * 1.14, scaleY: baseScale * .82, duration: 180, yoyo: true, repeat: 5, ease: 'Sine.InOut', onComplete: () => { if (root.active) root.setAngle(baseAngle).setPosition(fieldScreenX(scorer.y), fieldScreenY(scorer.x)).setScale(baseScale); } });
   s.tweens.add({ targets: scorer.ballRing, scaleX: 1.3, scaleY: .7, alpha: .7, duration: 240, yoyo: true, repeat: 4 });
   s.cameras.main.stopFollow();
+  s.tweens.add({ targets: s.cameras.main, zoom: 1.28, duration: 360, ease: 'Sine.Out', yoyo: true, hold: 1320 });
 }
 
 function startMusic(s) {
@@ -539,7 +548,13 @@ function startMusic(s) {
   if (!ctx?.createOscillator || !ctx?.createGain) return;
   try {
     ctx.resume()?.catch?.(() => {});
-    s.musicCtx = ctx; s.musicMaster = ctx.createGain(); s.musicMaster.gain.value = .13; s.musicMaster.connect(ctx.destination);
+    s.musicCtx = ctx; s.musicMaster = ctx.createGain(); s.musicMaster.gain.value = .2; s.musicMaster.connect(ctx.destination);
+    s.crowdBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    const noise = s.crowdBuffer.getChannelData(0); let low = 0;
+    for (let i = 0; i < noise.length; i++) { low += (Math.random() * 2 - 1 - low) * .045; noise[i] = low * 3; }
+    const crowd = ctx.createBufferSource(), crowdFilter = ctx.createBiquadFilter(), crowdGain = ctx.createGain();
+    crowd.buffer = s.crowdBuffer; crowd.loop = true; crowdFilter.type = 'bandpass'; crowdFilter.frequency.value = 720; crowdFilter.Q.value = .55; crowdGain.gain.value = .06;
+    crowd.connect(crowdFilter); crowdFilter.connect(crowdGain); crowdGain.connect(s.musicMaster); crowd.start();
     s.musicStep = 0; s.musicAt = ctx.currentTime + .06;
   } catch (_) {
     s.musicCtx = null; s.musicMaster = null;
@@ -565,6 +580,18 @@ function playChipNote(s, frequency, at, duration, waveform, volume) {
   oscillator.type = waveform; oscillator.frequency.setValueAtTime(frequency, at);
   envelope.gain.setValueAtTime(.0001, at); envelope.gain.linearRampToValueAtTime(volume, at + .012); envelope.gain.exponentialRampToValueAtTime(.0001, at + duration);
   oscillator.connect(envelope); envelope.connect(s.musicMaster); oscillator.start(at); oscillator.stop(at + duration + .015);
+}
+
+function playCrowd(s, intensity, duration) {
+  const ctx = s.musicCtx;
+  if (!ctx || !s.crowdBuffer || ctx.state === 'suspended') return;
+  const start = ctx.currentTime + .02, source = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), envelope = ctx.createGain();
+  const peak = .12 * intensity;
+  source.buffer = s.crowdBuffer; source.loop = true; filter.type = 'bandpass'; filter.Q.value = .65;
+  filter.frequency.setValueAtTime(480, start); filter.frequency.linearRampToValueAtTime(1350, start + duration * .65);
+  envelope.gain.setValueAtTime(.0001, start); envelope.gain.exponentialRampToValueAtTime(peak, start + Math.min(.28, duration * .3));
+  envelope.gain.setValueAtTime(peak, start + duration * .55); envelope.gain.exponentialRampToValueAtTime(.0001, start + duration);
+  source.connect(filter); filter.connect(envelope); envelope.connect(s.musicMaster); source.start(start); source.stop(start + duration + .04);
 }
 
 function playCue(s, text, color, time, duration, shake = 0) {
