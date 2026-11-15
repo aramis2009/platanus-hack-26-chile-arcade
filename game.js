@@ -75,6 +75,13 @@ function create() {
   s.loadingProgress = s.add.graphics().setScrollFactor(0).setDepth(36);
   s.loadingBanana = makeBanana(s, W / 2, 376, 1.2).setScrollFactor(0).setDepth(36);
   [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(false));
+  s.controlsArt = s.add.graphics().setScrollFactor(0).setDepth(35); drawControlsPlate(s.controlsArt);
+  s.controlsTitle = s.add.text(W / 2, 151, 'CONTROLS // READY', { fontFamily: 'Arial Black, sans-serif', fontSize: '33px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 5 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.controlsP1 = s.add.text(205, 235, 'P1  /  SOLO VS CPU\n\nMOVE + AIM     WASD\nPASS             U\nLONG PASS       O\nJUKE / TACKLE   I', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', lineSpacing: 8, stroke: '#07180f', strokeThickness: 2 }).setScrollFactor(0).setDepth(36);
+  s.controlsP2 = s.add.text(432, 235, 'P2  /  LOCAL\n\nMOVE + AIM     ARROWS\nPASS             R\nLONG PASS       Y\nJUKE / TACKLE   T', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', lineSpacing: 8, stroke: '#07180f', strokeThickness: 2 }).setScrollFactor(0).setDepth(36);
+  s.controlsCredit = s.add.text(W / 2, 408, 'CREATOR: ARAMIS2009', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.controlsPrompt = s.add.text(W / 2, 457, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '16px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  [s.controlsArt, s.controlsTitle, s.controlsP1, s.controlsP2, s.controlsCredit, s.controlsPrompt].forEach(item => item.setVisible(false));
   s.help.setText('AIM WASD  ·  PASS U  ·  LONG PASS O');
   s.cameras.main.setFollowOffset(0, 0);
 }
@@ -86,6 +93,9 @@ function update(time, delta) {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) showLoading(s, time);
   } else if (s.phase === 'loading') {
     updateLoading(s, time);
+  } else if (s.phase === 'controls') {
+    s.controlsPrompt.setAlpha(.72 + Math.sin(time / 280) * .22);
+    if (s.inputState.pressed.START1 || s.inputState.pressed.START2) startMatch(s, time);
   } else if (s.phase === 'playing') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'paused'; s.message.setText('PAUSED\nPRESS START TO RESUME').setVisible(true); }
     else playFrame(s, time, dt);
@@ -107,7 +117,7 @@ function startMatch(s, time) {
   s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700; s.down = 1; s.driveStart = WORLD / 2;
   s.pendingWinner = null;
   [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner, s.helpPlate, s.help].forEach(item => item.setVisible(true));
-  [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(false));
+  [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana, s.controlsArt, s.controlsTitle, s.controlsP1, s.controlsP2, s.controlsCredit, s.controlsPrompt].forEach(item => item.setVisible(false));
   s.cover.setVisible(false);
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
@@ -127,7 +137,13 @@ function updateLoading(s, time) {
   const progress = Phaser.Math.Clamp(1 - (s.loadingUntil - time) / 1800, 0, 1);
   s.loadingProgress.clear(); s.loadingProgress.fillStyle(C.lime, .95).fillRect(180, 424, 440 * progress, 9);
   s.loadingBanana.setRotation(time / 450);
-  if (time >= s.loadingUntil) startMatch(s, time);
+  if (time >= s.loadingUntil) showControls(s);
+}
+
+function showControls(s) {
+  s.phase = 'controls';
+  [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(false));
+  [s.controlsArt, s.controlsTitle, s.controlsP1, s.controlsP2, s.controlsCredit, s.controlsPrompt].forEach(item => item.setVisible(true));
 }
 
 function beginCountdown(s, time) {
@@ -580,6 +596,15 @@ function drawField(s) {
     g.lineBetween(W - 250, y - 7, W - 220, y - 7); g.lineBetween(W - 250, y + 7, W - 220, y + 7);
   }
   g.lineStyle(5, C.lime, .94); g.lineBetween(18, END, W - 18, END); g.lineBetween(18, WORLD - END, W - 18, WORLD - END);
+  g.lineStyle(2, C.blue, .46); g.lineBetween(28, END + 4, 28, WORLD - END - 4); g.lineBetween(W - 28, END + 4, W - 28, WORLD - END - 4);
+  const codeBits = ['0x26', '0101', 'RUN>', 'HACK'];
+  let codeRow = 0;
+  for (let y = END + 48; y < WORLD - END - 24; y += 118) {
+    const code = codeBits[codeRow++ % codeBits.length];
+    for (const x of [44, W - 44]) {
+      addFieldMark(s, s.add.text(x, y, code, { fontFamily: 'monospace', fontSize: '9px', color: '#65e7dc', fontStyle: 'bold', stroke: '#092218', strokeThickness: 3 }).setOrigin(.5).setAlpha(.72).setDepth(2));
+    }
+  }
   for (let y = END + 154; y < WORLD - END; y += 154) {
     const yards = Math.round((y - END) / 15.4);
     s.add.text(70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
@@ -587,6 +612,7 @@ function drawField(s) {
   }
   const midY = WORLD / 2;
   addFieldMark(s, s.add.ellipse(W / 2, midY, 270, 160, C.ink, .04).setStrokeStyle(4, C.lime, .65).setDepth(1));
+  addFieldMark(s, s.add.text(W / 2, midY - 60, '> ./PLATANUS_ARCADE', { fontFamily: 'monospace', fontSize: '9px', color: '#65e7dc', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 3 }).setOrigin(.5).setDepth(2));
   addFieldMark(s, s.add.text(W / 2, midY - 19, 'HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '31px', color: '#e1ff00', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
   addFieldMark(s, s.add.text(W / 2, midY + 22, 'aramis2009', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2));
 }
@@ -634,6 +660,18 @@ function drawLoadingPlate(g) {
   g.lineStyle(1, C.blue, .48); g.strokeRect(84, 116, 632, 368);
   g.fillStyle(C.black, .9); g.fillRect(180, 424, 440, 9);
   g.lineStyle(1, C.cream, .52); g.strokeRect(180, 424, 440, 9);
+}
+
+function drawControlsPlate(g) {
+  g.fillStyle(C.black, .96); g.fillRect(0, 0, W, H);
+  g.fillStyle(0x061713, .95); g.fillRect(64, 96, 672, 410);
+  g.fillStyle(C.lime, .96); g.fillRect(64, 96, 162, 6);
+  g.fillStyle(C.red, .96); g.fillRect(574, 500, 162, 6);
+  g.lineStyle(2, C.blue, .7); g.strokeRect(64, 96, 672, 410);
+  g.lineStyle(1, C.lime, .48); g.strokeRect(75, 107, 650, 388);
+  g.lineStyle(1, C.blue, .36); g.lineBetween(400, 210, 400, 378);
+  g.fillStyle(C.ink, .95); g.fillRect(160, 438, 480, 43);
+  g.lineStyle(1, C.lime, .65); g.strokeRect(160, 438, 480, 43);
 }
 
 function drawTitlePlate(g) {
