@@ -4,7 +4,7 @@ const WORLD = 1800;
 const TOP = 145;
 const BOTTOM = 520;
 const END = 130;
-const C = { grass: 0x164a32, stripe: 0xffffff, lime: 0xe1ff00, gold: 0xffc857, cream: 0xfff4cf, ink: 0x092218, red: 0xf06b50, blue: 0x69b7e8, black: 0x07180f };
+const C = { grass: 0x17345f, stripe: 0xffffff, flagBlue: 0x1671d9, gold: 0xffc857, cream: 0xf7f9ff, ink: 0x0b1b3a, red: 0xd52b1e, blue: 0x76baff, black: 0x050d20 };
 const TOUCHDOWN_EMOJIS = ['🏈', '🎉', '🏆', '🕺', '🔥', '🍌', '🙌', '⚡', '👑', '💥'];
 
 // Cabinet codes match the physical wiring and must remain unchanged.
@@ -19,7 +19,7 @@ const KEY_TO_ARCADE = {};
 for (const [code, keys] of Object.entries(CABINET_KEYS)) for (const key of keys) KEY_TO_ARCADE[key.toLowerCase()] = code;
 
 const config = {
-  type: Phaser.AUTO, width: W, height: H, parent: 'game-root', backgroundColor: '#07180f',
+  type: Phaser.AUTO, width: W, height: H, parent: 'game-root', backgroundColor: '#050d20',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   scene: { preload, create, update },
 };
@@ -45,43 +45,43 @@ function create() {
   s.cameras.main.setBounds(0, 0, W, WORLD).setScroll(0, WORLD / 2 - H / 2);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawHudPlate(s.hudArt);
-  s.hudHeader = s.add.text(122, 24, 'OYE IBAI, ¿NOS VEMOS?', { fontFamily: 'monospace', fontSize: '8px', color: '#e1ff00', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudLeft = s.add.text(51, 51, 'P1', { fontFamily: 'monospace', fontSize: '9px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudRight = s.add.text(193, 51, 'CPU', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hud = s.add.text(122, 52, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '17px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudStatus = s.add.text(700, 57, '', { fontFamily: 'monospace', fontSize: '8px', color: '#c1d9c5', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudHeader = s.add.text(122, 24, 'OYE IBAI, ¿NOS VEMOS?', { fontFamily: 'monospace', fontSize: '8px', color: '#1671d9', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudLeft = s.add.text(51, 51, 'P1', { fontFamily: 'monospace', fontSize: '9px', color: '#0b1b3a', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudRight = s.add.text(193, 51, 'CPU', { fontFamily: 'monospace', fontSize: '9px', color: '#f7f9ff', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hud = s.add.text(122, 52, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '17px', color: '#f7f9ff', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudStatus = s.add.text(700, 57, '', { fontFamily: 'monospace', fontSize: '8px', color: '#c5d9f2', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.driveArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawDrivePlate(s.driveArt);
-  s.driveBanner = s.add.text(700, 36, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#07180f', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.driveBanner = s.add.text(700, 36, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#1671d9', fontStyle: 'bold', align: 'center', stroke: '#050d20', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(false));
   s.helpPlate = s.add.graphics().setScrollFactor(0).setDepth(19);
   s.helpPlate.fillStyle(C.ink, .92).fillRect(130, 567, 540, 25);
   s.helpPlate.lineStyle(1, C.cream, .38).strokeRect(130, 567, 540, 25);
-  s.help = s.add.text(W / 2, 580, '', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.help = s.add.text(W / 2, 580, '', { fontFamily: 'monospace', fontSize: '9px', color: '#f7f9ff', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.titleArt = s.add.graphics().setScrollFactor(0).setDepth(18);
   drawTitlePlate(s.titleArt);
   s.titleArt.setVisible(false);
-  s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
-  s.title = s.add.text(137, 205, 'OYE IBAI,', { fontFamily: 'Arial Black, sans-serif', fontSize: '48px', color: '#fff4cf', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
-  s.titleAccent = s.add.text(137, 267, '¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#e1ff00', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
-  s.tagline = s.add.text(142, 326, 'A BANANA FOOTBALL SENDOFF.', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
-  s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
-  s.prompt = s.add.text(694, 34, 'PRESS ENTER', { fontFamily: 'monospace', fontSize: '11px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#1671d9', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.title = s.add.text(137, 205, 'OYE IBAI,', { fontFamily: 'Arial Black, sans-serif', fontSize: '48px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.titleAccent = s.add.text(137, 267, '¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#1671d9', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.tagline = s.add.text(142, 326, 'A BANANA FOOTBALL SENDOFF.', { fontFamily: 'monospace', fontSize: '12px', color: '#c5d9f2', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#f7f9ff', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.prompt = s.add.text(694, 34, 'PRESS ENTER', { fontFamily: 'monospace', fontSize: '11px', color: '#1671d9', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.titleBanana = makeBanana(s, 572, 295, 2.2).setRotation(-.28).setScrollFactor(0).setDepth(20);
   s.titleBanana.setVisible(false);
   s.loadingArt = s.add.graphics().setScrollFactor(0).setDepth(35); drawLoadingPlate(s.loadingArt);
-  s.loadingTitle = s.add.text(W / 2, 242, 'GET READY', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
-  s.loadingCredit = s.add.text(W / 2, 305, 'CREATOR: ARAMIS2009', { fontFamily: 'monospace', fontSize: '18px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
-  s.loadingStatus = s.add.text(W / 2, 448, 'LOADING GAME', { fontFamily: 'monospace', fontSize: '12px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.loadingTitle = s.add.text(W / 2, 242, 'GET READY', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.loadingCredit = s.add.text(W / 2, 305, 'CREATOR: ARAMIS2009', { fontFamily: 'monospace', fontSize: '18px', color: '#1671d9', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.loadingStatus = s.add.text(W / 2, 448, 'LOADING GAME', { fontFamily: 'monospace', fontSize: '12px', color: '#f7f9ff', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(36);
   s.loadingProgress = s.add.graphics().setScrollFactor(0).setDepth(36);
   s.loadingBanana = makeBanana(s, W / 2, 376, 1.2).setScrollFactor(0).setDepth(36);
   [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(false));
   s.controlsArt = s.add.graphics().setScrollFactor(0).setDepth(35); drawControlsPlate(s.controlsArt);
-  s.controlsTitle = s.add.text(W / 2, 151, 'CONTROLS // READY', { fontFamily: 'Arial Black, sans-serif', fontSize: '33px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 5 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
-  s.controlsP1 = s.add.text(205, 235, 'P1  /  SOLO VS CPU\n\nMOVE + AIM     WASD\nPASS             U\nLONG PASS       O\nJUKE / TACKLE   I', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', lineSpacing: 8, stroke: '#07180f', strokeThickness: 2 }).setScrollFactor(0).setDepth(36);
-  s.controlsP2 = s.add.text(432, 235, 'P2  /  LOCAL\n\nMOVE + AIM     ARROWS\nPASS             R\nLONG PASS       Y\nJUKE / TACKLE   T', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', lineSpacing: 8, stroke: '#07180f', strokeThickness: 2 }).setScrollFactor(0).setDepth(36);
-  s.controlsCredit = s.add.text(W / 2, 408, 'CREATOR: ARAMIS2009', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(36);
-  s.controlsPrompt = s.add.text(W / 2, 457, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '16px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.controlsTitle = s.add.text(W / 2, 151, 'CONTROLS // READY', { fontFamily: 'Arial Black, sans-serif', fontSize: '33px', color: '#1671d9', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 5 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.controlsP1 = s.add.text(205, 235, 'P1  /  SOLO VS CPU\n\nMOVE + AIM     WASD\nPASS             U\nLONG PASS       O\nJUKE / TACKLE   I', { fontFamily: 'monospace', fontSize: '15px', color: '#f7f9ff', lineSpacing: 8, stroke: '#050d20', strokeThickness: 2 }).setScrollFactor(0).setDepth(36);
+  s.controlsP2 = s.add.text(432, 235, 'P2  /  LOCAL\n\nMOVE + AIM     ARROWS\nPASS             R\nLONG PASS       Y\nJUKE / TACKLE   T', { fontFamily: 'monospace', fontSize: '15px', color: '#f7f9ff', lineSpacing: 8, stroke: '#050d20', strokeThickness: 2 }).setScrollFactor(0).setDepth(36);
+  s.controlsCredit = s.add.text(W / 2, 408, 'CREATOR: ARAMIS2009', { fontFamily: 'monospace', fontSize: '12px', color: '#c5d9f2', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.controlsPrompt = s.add.text(W / 2, 457, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '16px', color: '#1671d9', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
   [s.controlsArt, s.controlsTitle, s.controlsP1, s.controlsP2, s.controlsCredit, s.controlsPrompt].forEach(item => item.setVisible(false));
   s.help.setText('AIM WASD  ·  PASS U  ·  LONG PASS O');
   s.cameras.main.setFollowOffset(0, 0);
@@ -122,7 +122,7 @@ function startMatch(s, time) {
   s.cover.setVisible(false);
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
-  s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
+  s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#1671d9', fontStyle: 'bold', align: 'center', stroke: '#0b1b3a', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
   startStadiumAudio(s);
   makeTeams(s, 0, s.driveStart); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
   beginCountdown(s, time);
@@ -137,7 +137,7 @@ function showLoading(s, time) {
 
 function updateLoading(s, time) {
   const progress = Phaser.Math.Clamp(1 - (s.loadingUntil - time) / 1800, 0, 1);
-  s.loadingProgress.clear(); s.loadingProgress.fillStyle(C.lime, .95).fillRect(180, 424, 440 * progress, 9);
+  s.loadingProgress.clear(); s.loadingProgress.fillStyle(C.flagBlue, .95).fillRect(180, 424, 440 * progress, 9);
   s.loadingBanana.setRotation(time / 450);
   if (time >= s.loadingUntil) showControls(s);
 }
@@ -160,7 +160,7 @@ function updateCountdown(s, time) {
   }
   const label = remaining > 500 ? String(Math.ceil((remaining - 500) / 1000)) : 'KICKOFF!';
   if (label !== s.countLabel) {
-    s.countLabel = label; s.message.setText(label).setFontSize('64px').setColor('#e1ff00').setScale(.72);
+    s.countLabel = label; s.message.setText(label).setFontSize('64px').setColor('#1671d9').setScale(.72);
     s.tweens.add({ targets: s.message, scaleX: 1, scaleY: 1, duration: 220, ease: 'Back.Out' });
   }
 }
@@ -168,7 +168,7 @@ function updateCountdown(s, time) {
 function updateCelebration(s, time) {
   if (time < s.celebrationUntil) return;
   if (s.pendingWinner !== null) {
-    s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.pendingWinner + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setFontSize('28px').setColor('#e1ff00').setScale(1);
+    s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.pendingWinner + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setFontSize('28px').setColor('#1671d9').setScale(1);
     s.cameras.main.stopFollow(); return;
   }
   s.down = 1; s.driveStart = WORLD / 2;
@@ -194,27 +194,27 @@ function makeTeams(s, firstTeam = 0, spot = WORLD / 2) {
 }
 
 function createPlayer(s, team, number, x, y) {
-  const color = team === 0 ? C.lime : C.red;
+  const color = team === 0 ? C.flagBlue : C.red;
   const root = s.add.container(fieldScreenX(y), fieldScreenY(x)).setDepth(6).setScale(1.12);
   const ballRing = s.add.ellipse(0, 14, 50, 32, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
   root.add(s.add.ellipse(0, 31, 38, 10, C.black, .68));
-  root.add(s.add.rectangle(-8, 27, 9, 17, 0x10251a)); root.add(s.add.rectangle(8, 27, 9, 17, 0x10251a));
+  root.add(s.add.rectangle(-8, 27, 9, 17, 0x0b1b3a)); root.add(s.add.rectangle(8, 27, 9, 17, 0x0b1b3a));
   root.add(s.add.rectangle(-9, 34, 13, 5, C.cream)); root.add(s.add.rectangle(9, 34, 13, 5, C.cream));
   root.add(s.add.rectangle(0, 12, 30, 28, color).setStrokeStyle(2, C.cream));
-  root.add(s.add.rectangle(0, 1, 38, 11, team === 0 ? 0xb6d900 : 0xc44b3b).setStrokeStyle(1, C.cream));
-  root.add(s.add.rectangle(0, 13, 19, 19, team === 0 ? 0xc4e83b : 0xf17a67, .45));
+  root.add(s.add.rectangle(0, 1, 38, 11, team === 0 ? 0x0b54b8 : 0xb32119).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(0, 13, 19, 19, team === 0 ? 0x4a9aff : 0xef6a60, .45));
   root.add(s.add.rectangle(-15, 2, 5, 3, C.cream)); root.add(s.add.rectangle(15, 2, 5, 3, C.cream));
   root.add(s.add.rectangle(-20, 11, 9, 20, color).setRotation(-.2).setStrokeStyle(1, C.cream));
   root.add(s.add.rectangle(20, 11, 9, 20, color).setRotation(.2).setStrokeStyle(1, C.cream));
   root.add(s.add.rectangle(0, -5, 11, 7, 0xf0c49a));
-  root.add(s.add.ellipse(0, -17, 30, 23, team === 0 ? 0xb7dc10 : 0xc94d3e).setStrokeStyle(2, C.cream));
+  root.add(s.add.ellipse(0, -17, 30, 23, team === 0 ? 0x1671d9 : 0xd52b1e).setStrokeStyle(2, C.cream));
   root.add(s.add.ellipse(-5, -22, 12, 4, C.cream, .5));
   root.add(s.add.rectangle(0, -18, 4, 19, C.cream));
   root.add(s.add.rectangle(14, -14, 11, 3, C.cream)); root.add(s.add.rectangle(14, -5, 11, 3, C.cream));
   root.add(s.add.rectangle(20, -10, 3, 11, C.cream));
-  root.add(s.add.text(0, 12, String(number + 1), { fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: team === 0 ? '#092218' : '#fff4cf', fontStyle: 'bold' }).setOrigin(.5));
-  const roleLabel = s.add.text(fieldScreenX(y), fieldScreenY(x) - 39, '', { fontFamily: 'monospace', fontSize: '10px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
-  const controlLabel = s.add.text(fieldScreenX(y), fieldScreenY(x) - 53, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#e1ff00' : '#ff8e7a', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
+  root.add(s.add.text(0, 12, String(number + 1), { fontFamily: 'Arial Black, sans-serif', fontSize: '12px', color: team === 0 ? '#0b1b3a' : '#f7f9ff', fontStyle: 'bold' }).setOrigin(.5));
+  const roleLabel = s.add.text(fieldScreenX(y), fieldScreenY(x) - 39, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
+  const controlLabel = s.add.text(fieldScreenX(y), fieldScreenY(x) - 53, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#1671d9' : '#ef6a60', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
   const banana = makeBanana(s, 0, 25, .58); root.add(banana); banana.setRotation(Math.PI / 2).setVisible(false);
   return { root, banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
 }
@@ -291,11 +291,11 @@ function playFrame(s, time, dt) {
         impactBurst(s, defender.x, defender.y, C.red);
         if (Phaser.Math.Between(1, 100) <= (time < defender.tackleUntil ? 45 : 18)) {
           dropBanana(s, current.x, current.y, time, 1 - s.possession);
-          playCue(s, 'FUMBLE!', '#ff8e7a', time, 750); return;
+          playCue(s, 'FUMBLE!', '#ef6a60', time, 750); return;
         }
         current.x = Phaser.Math.Clamp(current.x - attack * 22, END + 28, WORLD - END - 28);
         current.root.setPosition(fieldScreenX(current.y), fieldScreenY(current.x));
-        playCue(s, 'BROKEN TACKLE!', '#e1ff00', time, 400);
+        playCue(s, 'BROKEN TACKLE!', '#1671d9', time, 400);
         break;
       }
     }
@@ -406,7 +406,7 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   const targetY = Phaser.Math.Clamp(baseY + aimX * miss, TOP + 26, BOTTOM - 24);
   const yardsToGoal = s.possession === 0 ? WORLD - END - targetX : targetX - END;
   const distance = Phaser.Math.Distance.Between(p.x, p.y, targetX, targetY);
-  playCue(s, longPass ? 'LONG PASS!' : 'PASS!', '#e1ff00', time, 520);
+  playCue(s, longPass ? 'LONG PASS!' : 'PASS!', '#1671d9', time, 520);
   impactBurst(s, p.x + attack * 18, p.y - 10, C.gold);
   const from = { x: p.x, y: p.y }, ballScale = longPass ? 1.08 : .92;
   const fromScreen = { x: fieldScreenX(from.y), y: fieldScreenY(from.x) };
@@ -433,7 +433,7 @@ function updatePass(s, dt, time) {
   for (const d of defenders) {
     if (Phaser.Math.Distance.Between(d.x, d.y - 10, f.x, f.y) < 25) {
       f.visual.destroy(); f.shadow.destroy(); s.pass = null; setPossession(s, 1 - s.possession, d); s.down = 1; s.driveStart = f.x; s.turnoverUntil = time + 1400;
-      playCue(s, 'INTERCEPTED!', '#ff8e7a', time, 900); impactBurst(s, d.x, d.y, C.red); return;
+      playCue(s, 'INTERCEPTED!', '#ef6a60', time, 900); impactBurst(s, d.x, d.y, C.red); return;
     }
   }
   if (t >= 1) {
@@ -441,12 +441,12 @@ function updatePass(s, dt, time) {
     const receiver = catchers.reduce((best, player) => Phaser.Math.Distance.Between(player.x, player.y, f.x, f.y) < Phaser.Math.Distance.Between(best.x, best.y, f.x, f.y) ? player : best, catchers[0]);
     f.visual.destroy(); f.shadow.destroy(); s.pass = null;
     if (Phaser.Math.Distance.Between(receiver.x, receiver.y, f.x, f.y) > 48) {
-      dropBanana(s, f.x, f.y, time, 1 - s.possession); playCue(s, 'WILD PASS!', '#ff8e7a', time, 650); return;
+      dropBanana(s, f.x, f.y, time, 1 - s.possession); playCue(s, 'WILD PASS!', '#ef6a60', time, 650); return;
     }
     receiver.x = f.x; receiver.y = f.y;
     receiver.root.setPosition(fieldScreenX(receiver.y), fieldScreenY(receiver.x));
     setPossession(s, s.possession, receiver); s.turnoverUntil = time + 1100;
-    playCue(s, 'CAUGHT!', '#e1ff00', time, 560); impactBurst(s, receiver.x, receiver.y, C.gold);
+    playCue(s, 'CAUGHT!', '#1671d9', time, 560); impactBurst(s, receiver.x, receiver.y, C.gold);
   }
 }
 
@@ -470,7 +470,7 @@ function updateLooseBall(s, time) {
     ball.visual.setPosition(px, py - fall * 20).setRotation(fall * .5).setScale(.84 - fall * .12);
     ball.shadow.setPosition(px, py + 7).setScale(1 - fall * .25, 1 - fall * .25);
     if (time >= ball.landsAt) {
-      ball.grounded = true; s.phase = 'loose'; playCue(s, 'BALL DOWN!', '#ff8e7a', time, 600);
+      ball.grounded = true; s.phase = 'loose'; playCue(s, 'BALL DOWN!', '#ef6a60', time, 600);
     }
     return;
   }
@@ -481,7 +481,7 @@ function updateLooseBall(s, time) {
   ball.visual.destroy(); ball.shadow.destroy(); s.looseBall = null;
   s.possession = ball.recoverTeam; s.down = 1; s.driveStart = ball.x; s.turnoverUntil = time + 700;
   makeTeams(s, s.possession, ball.x);
-  playCue(s, 'BANANA RECOVERED!', '#ff8e7a', time, 700);
+  playCue(s, 'BANANA RECOVERED!', '#ef6a60', time, 700);
   updateHud(s); s.phase = 'spotting'; s.spotUntil = time + 700;
 }
 
@@ -512,7 +512,7 @@ function finishPlay(s, spot, time, result) {
   if (turnover) call = 'TURNOVER ON DOWNS!';
   else if (firstDown) call = 'FIRST DOWN!';
   else if (result === 'INCOMPLETE!') call = 'INCOMPLETE!';
-  playCue(s, call, turnover ? '#ff8e7a' : '#e1ff00', time, 850);
+  playCue(s, call, turnover ? '#ef6a60' : '#1671d9', time, 850);
   updateHud(s);
   s.phase = 'spotting'; s.spotUntil = time + 850;
 }
@@ -524,13 +524,13 @@ function scoreTouchdown(s, time) {
   const scorer = s.players[s.possession][0];
   s.cameras.main.flash(250, 225, 255, 0);
   s.cameras.main.shake(160, .004);
-  impactBurst(s, scorer.x, scorer.y, C.lime);
+  impactBurst(s, scorer.x, scorer.y, C.flagBlue);
   s.phase = 'celebrating'; s.nextTeam = 1 - s.possession;
   s.pendingWinner = s.scores[s.possession] >= 3 ? s.possession : null;
   s.celebrationUntil = time + 2200; s.messageUntil = 0;
   s.nearGoalCheered = false; playCrowd(s, 1.35, 2.8);
   const emoji = TOUCHDOWN_EMOJIS[Phaser.Math.Between(0, TOUCHDOWN_EMOJIS.length - 1)];
-  s.message.setText(`${emoji} TOUCHDOWN! ${emoji}`).setFontSize('34px').setColor('#e1ff00').setAlpha(1).setScale(1);
+  s.message.setText(`${emoji} TOUCHDOWN! ${emoji}`).setFontSize('34px').setColor('#1671d9').setAlpha(1).setScale(1);
   const celebrationEmoji = s.add.text(W / 2, H / 2 - 92, emoji, { fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif', fontSize: '48px' }).setOrigin(.5).setScrollFactor(0).setDepth(29).setScale(.45);
   s.tweens.add({ targets: celebrationEmoji, y: H / 2 - 150, scale: 1.2, alpha: 0, duration: 1250, ease: 'Back.Out', onComplete: () => celebrationEmoji.destroy() });
   const root = scorer.root, baseAngle = root.angle, baseY = root.y, baseScale = root.scaleX;
@@ -598,7 +598,7 @@ function updateHud(s) {
   if (s.phase === 'playing' || s.phase === 'countdown' || s.phase === 'spotting' || s.phase === 'celebrating') {
     const y = carrier.x;
     const gainLine = Phaser.Math.Clamp(s.driveStart + dir * 154, END, WORLD - END);
-    s.playLine.lineStyle(2, C.lime, .72); s.playLine.lineBetween(24, gainLine, W - 24, gainLine);
+    s.playLine.lineStyle(2, C.flagBlue, .72); s.playLine.lineBetween(24, gainLine, W - 24, gainLine);
     s.playLine.lineStyle(3, C.red, .95); s.playLine.lineBetween(24, y, W - 24, y);
     s.playLine.lineStyle(1, C.cream, .88); s.playLine.lineBetween(24, y - 5, W - 24, y - 5);
     s.playLine.fillStyle(C.red, 1); s.playLine.fillTriangle(30, y - 8, 42, y, 30, y + 8);
@@ -614,21 +614,21 @@ function drawField(s) {
   g.fillStyle(C.grass); g.fillRect(18, 0, W - 36, WORLD);
   for (let y = 0; y < WORLD; y += 44) {
     const band = Math.floor(y / 44);
-    g.fillStyle(band % 2 ? 0x1c5739 : 0x164a32, .34); g.fillRect(20, y, W - 40, 22);
+    g.fillStyle(band % 2 ? 0x24477b : 0x17345f, .34); g.fillRect(20, y, W - 40, 22);
   }
   for (let i = 0; i < 240; i++) {
     const x = 30 + ((i * 137) % 740), y = 8 + ((i * 283) % (WORLD - 16));
-    g.fillStyle(i % 3 ? 0x7fa76a : 0x092218, i % 3 ? .1 : .13); g.fillRect(x, y, 2 + i % 3, 2);
+    g.fillStyle(i % 3 ? 0x8abfff : 0x0b1b3a, i % 3 ? .1 : .13); g.fillRect(x, y, 2 + i % 3, 2);
   }
-  for (const [y, tint] of [[0, 0x174d3c], [WORLD - END, 0x3f3b19]]) {
+  for (const [y, tint] of [[0, 0x0039a6], [WORLD - END, 0xd52b1e]]) {
     g.fillStyle(tint, .94); g.fillRect(18, y, W - 36, END);
     g.fillStyle(C.black, .12); g.fillRect(18, y + END / 2 - 1, W - 36, 2);
     for (let x = 38; x < W - 30; x += 38) {
-      g.lineStyle(10, tint === 0x174d3c ? 0x28614a : 0x555126, .48); g.lineBetween(x, y + 10, x + 24, y + END - 10);
+      g.lineStyle(10, tint === 0x0039a6 ? 0x1c5fc0 : 0xef5045, .48); g.lineBetween(x, y + 10, x + 24, y + END - 10);
     }
     g.lineStyle(4, C.cream, .9); g.strokeRect(24, y + 6, W - 48, END - 12);
     g.lineStyle(1, C.cream, .45); g.strokeRect(32, y + 14, W - 64, END - 28);
-    addFieldMark(s, s.add.text(W / 2, y + END / 2, 'PLATANUS HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: tint === 0x174d3c ? '#e1ff00' : '#fff4cf', fontStyle: 'bold', stroke: '#0d3b28', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
+    addFieldMark(s, s.add.text(W / 2, y + END / 2, 'PLATANUS HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#ffffff', fontStyle: 'bold', stroke: '#07132b', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
   }
   g.lineStyle(3, C.cream, .76); g.strokeRect(18, 0, W - 36, WORLD);
   g.lineStyle(2, C.cream, .68);
@@ -639,49 +639,49 @@ function drawField(s) {
     g.lineBetween(220, y - 7, 250, y - 7); g.lineBetween(220, y + 7, 250, y + 7);
     g.lineBetween(W - 250, y - 7, W - 220, y - 7); g.lineBetween(W - 250, y + 7, W - 220, y + 7);
   }
-  g.lineStyle(5, C.lime, .94); g.lineBetween(18, END, W - 18, END); g.lineBetween(18, WORLD - END, W - 18, WORLD - END);
+  g.lineStyle(5, C.flagBlue, .94); g.lineBetween(18, END, W - 18, END); g.lineBetween(18, WORLD - END, W - 18, WORLD - END);
   g.lineStyle(2, C.blue, .46); g.lineBetween(28, END + 4, 28, WORLD - END - 4); g.lineBetween(W - 28, END + 4, W - 28, WORLD - END - 4);
   const codeBits = ['0x26', '0101', 'RUN>', 'HACK'];
   let codeRow = 0;
   for (let y = END + 48; y < WORLD - END - 24; y += 118) {
     const code = codeBits[codeRow++ % codeBits.length];
     for (const x of [44, W - 44]) {
-      addFieldMark(s, s.add.text(x, y, code, { fontFamily: 'monospace', fontSize: '9px', color: '#65e7dc', fontStyle: 'bold', stroke: '#092218', strokeThickness: 3 }).setOrigin(.5).setAlpha(.72).setDepth(2));
+      addFieldMark(s, s.add.text(x, y, code, { fontFamily: 'monospace', fontSize: '9px', color: '#9acaff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5).setAlpha(.72).setDepth(2));
     }
   }
   for (let y = END + 154; y < WORLD - END; y += 154) {
     const yards = Math.round((y - END) / 15.4);
-    s.add.text(70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
-    s.add.text(W - 70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
+    s.add.text(70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
+    s.add.text(W - 70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#ffffff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
   }
   const midY = WORLD / 2;
-  addFieldMark(s, s.add.ellipse(W / 2, midY, 270, 160, C.ink, .04).setStrokeStyle(4, C.lime, .65).setDepth(1));
-  addFieldMark(s, s.add.text(W / 2, midY - 60, '> ./PLATANUS_ARCADE', { fontFamily: 'monospace', fontSize: '9px', color: '#65e7dc', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 3 }).setOrigin(.5).setDepth(2));
-  addFieldMark(s, s.add.text(W / 2, midY - 19, 'HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '31px', color: '#e1ff00', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
-  addFieldMark(s, s.add.text(W / 2, midY + 22, 'aramis2009', { fontFamily: 'monospace', fontSize: '15px', color: '#fff4cf', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2));
+  addFieldMark(s, s.add.ellipse(W / 2, midY, 270, 160, C.ink, .04).setStrokeStyle(4, C.flagBlue, .65).setDepth(1));
+  addFieldMark(s, s.add.text(W / 2, midY - 60, '> ./PLATANUS_ARCADE', { fontFamily: 'monospace', fontSize: '9px', color: '#9acaff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5).setDepth(2));
+  addFieldMark(s, s.add.text(W / 2, midY - 19, 'HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '31px', color: '#1671d9', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
+  addFieldMark(s, s.add.text(W / 2, midY + 22, 'aramis2009', { fontFamily: 'monospace', fontSize: '15px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 4 }).setOrigin(.5).setDepth(2));
 }
 
 function drawStadium(s) {
   const g = s.stadiumArt;
   g.fillStyle(C.black); g.fillRect(0, 0, W, WORLD);
-  g.fillStyle(0x102b1d); g.fillRect(0, 0, W, WORLD);
+  g.fillStyle(0x0b1b3a); g.fillRect(0, 0, W, WORLD);
   for (let y = 0; y < WORLD; y += 72) {
-    g.fillStyle(0x07180f); g.fillRect(0, y, 18, 64); g.fillRect(W - 18, y, 18, 64);
-    g.fillStyle(0x254d36); g.fillRect(3, y + 8, 12, 4); g.fillRect(W - 15, y + 8, 12, 4);
+    g.fillStyle(C.black); g.fillRect(0, y, 18, 64); g.fillRect(W - 18, y, 18, 64);
+    g.fillStyle(0x24477b); g.fillRect(3, y + 8, 12, 4); g.fillRect(W - 15, y + 8, 12, 4);
     for (let x = 22; x < 48; x += 12) {
-      const color = Math.floor((x + y) / 12) % 3 === 0 ? C.lime : Math.floor((x + y) / 12) % 3 === 1 ? C.red : C.cream;
+      const color = Math.floor((x + y) / 12) % 3 === 0 ? C.flagBlue : Math.floor((x + y) / 12) % 3 === 1 ? C.red : C.cream;
       g.fillStyle(color, .75); g.fillCircle(x, y + 28, 2); g.fillCircle(W - x, y + 47, 2);
     }
   }
-  g.fillStyle(0x183d29); g.fillRect(18, 0, 8, WORLD); g.fillRect(W - 26, 0, 8, WORLD);
-  g.lineStyle(1, C.lime, .26); g.lineBetween(17, 0, 17, WORLD); g.lineBetween(W - 18, 0, W - 18, WORLD);
+  g.fillStyle(0x17345f); g.fillRect(18, 0, 8, WORLD); g.fillRect(W - 26, 0, 8, WORLD);
+  g.lineStyle(1, C.flagBlue, .26); g.lineBetween(17, 0, 17, WORLD); g.lineBetween(W - 18, 0, W - 18, WORLD);
 }
 
 function drawHudPlate(g) {
   g.fillStyle(C.black, .88); g.fillRect(18, 12, 208, 57);
-  g.fillStyle(0x57718d, .9); g.fillRect(18, 12, 208, 4); g.fillRect(18, 12, 4, 57);
+  g.fillStyle(0x214f91, .9); g.fillRect(18, 12, 208, 4); g.fillRect(18, 12, 4, 57);
   g.fillStyle(C.ink, .92); g.fillRect(25, 19, 194, 43);
-  g.fillStyle(C.lime, .94); g.fillRect(30, 38, 42, 21);
+  g.fillStyle(C.flagBlue, .94); g.fillRect(30, 38, 42, 21);
   g.fillStyle(C.red, .94); g.fillRect(172, 38, 42, 21);
   g.lineStyle(1, C.cream, .74); g.strokeRect(18, 12, 208, 57);
   g.lineStyle(1, C.blue, .45); g.lineBetween(25, 35, 219, 35);
@@ -689,7 +689,7 @@ function drawHudPlate(g) {
 
 function drawDrivePlate(g) {
   g.fillStyle(C.black, .88); g.fillRect(618, 12, 164, 57);
-  g.fillStyle(0x57718d, .9); g.fillRect(778, 12, 4, 57); g.fillRect(618, 65, 164, 4);
+  g.fillStyle(0x214f91, .9); g.fillRect(778, 12, 4, 57); g.fillRect(618, 65, 164, 4);
   g.fillStyle(C.ink, .92); g.fillRect(625, 19, 150, 43);
   g.lineStyle(1, C.cream, .74); g.strokeRect(618, 12, 164, 57);
   g.lineStyle(1, C.gold, .72); g.lineBetween(631, 45, 769, 45);
@@ -698,7 +698,7 @@ function drawDrivePlate(g) {
 function drawLoadingPlate(g) {
   g.fillStyle(C.black, .97); g.fillRect(0, 0, W, H);
   g.fillStyle(C.ink, .95); g.fillRect(72, 104, 656, 392);
-  g.fillStyle(C.lime, .95); g.fillRect(72, 104, 178, 6);
+  g.fillStyle(C.flagBlue, .95); g.fillRect(72, 104, 178, 6);
   g.fillStyle(C.red, .95); g.fillRect(550, 490, 178, 6);
   g.lineStyle(3, C.cream, .82); g.strokeRect(72, 104, 656, 392);
   g.lineStyle(1, C.blue, .48); g.strokeRect(84, 116, 632, 368);
@@ -708,24 +708,24 @@ function drawLoadingPlate(g) {
 
 function drawControlsPlate(g) {
   g.fillStyle(C.black, .96); g.fillRect(0, 0, W, H);
-  g.fillStyle(0x061713, .95); g.fillRect(64, 96, 672, 410);
-  g.fillStyle(C.lime, .96); g.fillRect(64, 96, 162, 6);
+  g.fillStyle(0x0b1b3a, .95); g.fillRect(64, 96, 672, 410);
+  g.fillStyle(C.flagBlue, .96); g.fillRect(64, 96, 162, 6);
   g.fillStyle(C.red, .96); g.fillRect(574, 500, 162, 6);
   g.lineStyle(2, C.blue, .7); g.strokeRect(64, 96, 672, 410);
-  g.lineStyle(1, C.lime, .48); g.strokeRect(75, 107, 650, 388);
+  g.lineStyle(1, C.flagBlue, .48); g.strokeRect(75, 107, 650, 388);
   g.lineStyle(1, C.blue, .36); g.lineBetween(400, 210, 400, 378);
   g.fillStyle(C.ink, .95); g.fillRect(160, 438, 480, 43);
-  g.lineStyle(1, C.lime, .65); g.strokeRect(160, 438, 480, 43);
+  g.lineStyle(1, C.flagBlue, .65); g.strokeRect(160, 438, 480, 43);
 }
 
 function drawTitlePlate(g) {
   g.fillStyle(C.black, .9); g.fillRect(92, 113, 616, 374);
   g.fillStyle(C.ink, .92); g.fillRect(101, 122, 598, 356);
-  g.lineStyle(2, C.lime, .72); g.strokeRect(92, 113, 616, 374);
+  g.lineStyle(2, C.flagBlue, .72); g.strokeRect(92, 113, 616, 374);
   g.lineStyle(1, C.cream, .42); g.strokeRect(101, 122, 598, 356);
-  g.fillStyle(C.lime, .95); g.fillRect(92, 113, 146, 5);
+  g.fillStyle(C.flagBlue, .95); g.fillRect(92, 113, 146, 5);
   g.fillStyle(C.red, .95); g.fillRect(562, 482, 146, 5);
-  g.lineStyle(2, C.lime, .48); g.strokeCircle(572, 295, 94); g.strokeCircle(572, 295, 79);
+  g.lineStyle(2, C.flagBlue, .48); g.strokeCircle(572, 295, 94); g.strokeCircle(572, 295, 79);
   g.lineStyle(1, C.cream, .2); g.lineBetween(505, 228, 639, 362); g.lineBetween(639, 228, 505, 362);
   g.fillStyle(C.gold, .9); g.fillCircle(671, 158, 3); g.fillCircle(654, 172, 2); g.fillCircle(682, 184, 2);
 }
@@ -738,7 +738,7 @@ function makeBanana(s, x, y, scale) {
   c.add(s.add.ellipse(0, 0, 51, 22, C.gold).setRotation(-.2).setStrokeStyle(2, 0x704018));
   c.add(s.add.ellipse(-2, 4, 37, 9, 0xd78c25, .72).setRotation(-.2));
   c.add(s.add.ellipse(-12, -5, 17, 4, 0xffef9c, .9).setRotation(-.2));
-  c.add(s.add.ellipse(-25, -2, 8, 11, C.lime).setRotation(-.45));
+  c.add(s.add.ellipse(-25, -2, 8, 11, C.flagBlue).setRotation(-.45));
   c.add(s.add.ellipse(25, 2, 8, 11, 0xffdf77).setRotation(.45));
   c.add(s.add.rectangle(0, 0, 2, 12, 0x704018).setRotation(-.2));
   for (let i = -1; i <= 1; i++) c.add(s.add.rectangle(i * 5, -1, 2, 8, C.cream).setRotation(-.2));
