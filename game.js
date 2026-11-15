@@ -202,7 +202,7 @@ function makeTeams(s, firstTeam = 0, spot = WORLD / 2) {
 }
 
 function createPlayer(s, team, number, x, y) {
-  const color = team ? C.red : C.flagBlue, dark = team ? 0xb32119 : 0x0b54b8, trim = team ? C.cream : C.flagBlue, skin = 0xf0c49a;
+  const color = team ? C.red : C.flagBlue, dark = team ? 0xa91f18 : 0x0b54b8, trim = team ? C.cream : C.flagBlue, skin = 0xf0c49a;
   // Brighter than the kit colours so the human-controlled marker reads against the navy turf from cabinet distance.
   const pc = team ? 0xff5a4a : 0x4aa8ff;
   // Upright billboard with its origin at the feet, so the projected ground point anchors it.
@@ -210,23 +210,41 @@ function createPlayer(s, team, number, x, y) {
   const ballRing = s.add.ellipse(0, 0, 62, 22, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
   root.add(s.add.ellipse(0, 0, 44, 13, C.black, .45));
   const ring = s.add.ellipse(0, 0, 80, 28).setStrokeStyle(4, pc); root.add(ring);
-  // Legs then arms; renderWorld pumps them while the player runs.
-  const limbs = [s.add.rectangle(-7, -10, 10, 22, C.cream), s.add.rectangle(7, -10, 10, 22, C.cream), s.add.rectangle(-19, -43, 8, 23, color).setOrigin(.5, 0), s.add.rectangle(19, -43, 8, 23, color).setOrigin(.5, 0)];
+  // Legs and arms remain separate so the existing run cycle animates the full kit.
+  const limbs = [s.add.rectangle(-7, -10, 11, 19, C.cream), s.add.rectangle(7, -10, 11, 19, C.cream), s.add.rectangle(-20, -44, 10, 23, color).setOrigin(.5, 0), s.add.rectangle(20, -44, 10, 23, color).setOrigin(.5, 0)];
   root.add(limbs);
-  root.add(s.add.rectangle(0, -21, 26, 7, dark));
-  root.add(s.add.rectangle(0, -34, 27, 21, color).setStrokeStyle(1, C.cream));
-  root.add(s.add.ellipse(0, -45, 46, 15, dark).setStrokeStyle(2, C.cream));
-  root.add(s.add.rectangle(0, -52, 9, 6, skin));
-  // Team 0 wears a white helmet so the blue side still stands out against the navy turf.
-  root.add(s.add.circle(0, -61, 11, team ? C.red : C.cream).setStrokeStyle(2, trim));
-  root.add(s.add.rectangle(0, -62, 3, 20, trim));
-  // The defense faces the camera, so renderWorld shows the face and facemask only on that side.
-  const face = [s.add.rectangle(0, -58, 14, 8, skin), s.add.rectangle(0, -59, 17, 2, 0x9fb0c8), s.add.rectangle(0, -55, 17, 2, 0x9fb0c8)]; root.add(face);
-  root.add(s.add.text(0, -34, String(number + 1), { fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5));
+  root.add(s.add.rectangle(-11, -2, 15, 5, C.ink).setStrokeStyle(1, C.black));
+  root.add(s.add.rectangle(11, -2, 15, 5, C.ink).setStrokeStyle(1, C.black));
+  root.add(s.add.rectangle(-11, -7, 3, 14, C.cream)); root.add(s.add.rectangle(11, -7, 3, 14, C.cream));
+  root.add(s.add.rectangle(-7, -10, 2, 15, color)); root.add(s.add.rectangle(7, -10, 2, 15, color));
+  root.add(s.add.ellipse(0, -19, 35, 18, C.cream).setStrokeStyle(2, 0xc5d9f2));
+  root.add(s.add.rectangle(0, -27, 31, 4, C.ink));
+  root.add(s.add.rectangle(0, -27, 7, 7, C.cream).setStrokeStyle(1, C.blue));
+  root.add(s.add.ellipse(0, -44, 52, 24, dark).setStrokeStyle(2, C.cream));
+  root.add(s.add.ellipse(0, -43, 43, 16, color));
+  root.add(s.add.rectangle(-19, -44, 10, 5, C.cream)); root.add(s.add.rectangle(19, -44, 10, 5, C.cream));
+  root.add(s.add.rectangle(-19, -44, 3, 5, trim)); root.add(s.add.rectangle(19, -44, 3, 5, trim));
+  root.add(s.add.rectangle(0, -35, 30, 22, color).setStrokeStyle(2, dark));
+  root.add(s.add.rectangle(-12, -43, 4, 7, trim)); root.add(s.add.rectangle(12, -43, 4, 7, trim));
+  root.add(s.add.rectangle(0, -35, 3, 16, team ? 0xf06458 : 0x68a9ff, .8));
+  root.add(s.add.rectangle(0, -25, 11, 3, C.cream, .9));
+  root.add(s.add.rectangle(-23, -28, 7, 14, skin).setStrokeStyle(1, 0xb98160));
+  root.add(s.add.rectangle(23, -28, 7, 14, skin).setStrokeStyle(1, 0xb98160));
+  root.add(s.add.rectangle(-23, -20, 9, 6, team ? C.flagBlue : C.red).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(23, -20, 9, 6, team ? C.flagBlue : C.red).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(0, -55, 12, 7, skin));
+  const helmet = team ? C.ink : C.cream;
+  root.add(s.add.ellipse(0, -68, 33, 25, helmet).setStrokeStyle(2, trim));
+  root.add(s.add.ellipse(0, -75, 25, 11, team ? 0x17345f : 0xffffff, .65));
+  root.add(s.add.rectangle(0, -68, 4, 20, color));
+  root.add(s.add.ellipse(-10, -67, 4, 4, trim));
+  // The face cage appears when the player faces the camera, keeping the silhouette readable in play.
+  const face = [s.add.rectangle(0, -62, 16, 7, skin), s.add.rectangle(0, -60, 20, 2, 0xc5d9f2), s.add.rectangle(0, -55, 22, 2, 0xc5d9f2), s.add.rectangle(-9, -58, 2, 7, 0xc5d9f2), s.add.rectangle(9, -58, 2, 7, 0xc5d9f2)]; root.add(face);
+  root.add(s.add.text(0, -35, String([12, 24, 55, 87][number]), { fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5));
   const roleLabel = s.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
   const controlLabel = s.add.text(0, 0, team === 0 ? 'P1' : 'P2', { fontFamily: 'Arial Black, sans-serif', fontSize: '16px', color: team ? '#ff5a4a' : '#4aa8ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
   const banana = makeBanana(s, 15, -27, .5); root.add(banana); banana.setRotation(.6).setVisible(false);
-  const arrow = s.add.triangle(0, -94, 0, 0, 22, 0, 11, 16, pc).setStrokeStyle(2, C.cream); root.add(arrow);
+  const arrow = s.add.triangle(0, -104, 0, 0, 22, 0, 11, 16, pc).setStrokeStyle(2, C.cream); root.add(arrow);
   return { root, limbs, face, marks: [ring, arrow], banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
 }
 
