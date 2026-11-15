@@ -72,6 +72,10 @@ function update(time, delta) {
   } else if (s.phase === 'playing') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'paused'; s.message.setText('PAUSED\nPRESS START TO RESUME').setVisible(true); }
     else playFrame(s, time, dt);
+  } else if (s.phase === 'countdown') {
+    updateCountdown(s, time);
+  } else if (s.phase === 'celebrating') {
+    updateCelebration(s, time);
   } else if (s.phase === 'paused') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'playing'; s.message.setVisible(false); }
   } else if (s.phase === 'over' && (s.inputState.pressed.START1 || s.inputState.pressed.START2)) startMatch(s, time);
@@ -79,12 +83,41 @@ function update(time, delta) {
 }
 
 function startMatch(s, time) {
-  s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'playing'; s.turnoverUntil = time + 1700;
+  s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700;
+  s.pendingWinner = null;
   [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(true));
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
   makeTeams(s); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
+  beginCountdown(s, time);
+}
+
+function beginCountdown(s, time) {
+  s.phase = 'countdown'; s.countdownUntil = time + 3500; s.countLabel = '';
+  updateCountdown(s, time);
+}
+
+function updateCountdown(s, time) {
+  const remaining = s.countdownUntil - time;
+  if (remaining <= 0) {
+    s.phase = 'playing'; s.message.setText('').setFontSize('30px').setScale(1); s.turnoverUntil = time + 650; return;
+  }
+  const label = remaining > 500 ? String(Math.ceil((remaining - 500) / 1000)) : 'KICKOFF!';
+  if (label !== s.countLabel) {
+    s.countLabel = label; s.message.setText(label).setFontSize('64px').setColor('#e1ff00').setScale(.72);
+    s.tweens.add({ targets: s.message, scaleX: 1, scaleY: 1, duration: 220, ease: 'Back.Out' });
+  }
+}
+
+function updateCelebration(s, time) {
+  if (time < s.celebrationUntil) return;
+  if (s.pendingWinner !== null) {
+    s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.pendingWinner + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setFontSize('28px').setColor('#e1ff00').setScale(1);
+    s.cameras.main.stopFollow(); return;
+  }
+  makeTeams(s, s.nextTeam); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
+  beginCountdown(s, time);
 }
 
 function makeTeams(s, firstTeam = 0) {
@@ -104,17 +137,20 @@ function makeTeams(s, firstTeam = 0) {
 
 function createPlayer(s, team, number, x, y) {
   const color = team === 0 ? C.lime : C.red;
-  const root = s.add.container(fieldScreenX(y), fieldScreenY(x)).setDepth(6);
+  const root = s.add.container(fieldScreenX(y), fieldScreenY(x)).setDepth(6).setScale(1.12);
   const ballRing = s.add.ellipse(0, 14, 50, 32, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
   root.add(s.add.ellipse(0, 31, 38, 10, C.black, .68));
   root.add(s.add.rectangle(-8, 27, 9, 17, 0x10251a)); root.add(s.add.rectangle(8, 27, 9, 17, 0x10251a));
   root.add(s.add.rectangle(-9, 34, 13, 5, C.cream)); root.add(s.add.rectangle(9, 34, 13, 5, C.cream));
   root.add(s.add.rectangle(0, 12, 30, 28, color).setStrokeStyle(2, C.cream));
   root.add(s.add.rectangle(0, 1, 38, 11, team === 0 ? 0xb6d900 : 0xc44b3b).setStrokeStyle(1, C.cream));
+  root.add(s.add.rectangle(0, 13, 19, 19, team === 0 ? 0xc4e83b : 0xf17a67, .45));
+  root.add(s.add.rectangle(-15, 2, 5, 3, C.cream)); root.add(s.add.rectangle(15, 2, 5, 3, C.cream));
   root.add(s.add.rectangle(-20, 11, 9, 20, color).setRotation(-.2).setStrokeStyle(1, C.cream));
   root.add(s.add.rectangle(20, 11, 9, 20, color).setRotation(.2).setStrokeStyle(1, C.cream));
   root.add(s.add.rectangle(0, -5, 11, 7, 0xf0c49a));
   root.add(s.add.ellipse(0, -17, 30, 23, team === 0 ? 0xb7dc10 : 0xc94d3e).setStrokeStyle(2, C.cream));
+  root.add(s.add.ellipse(-5, -22, 12, 4, C.cream, .5));
   root.add(s.add.rectangle(0, -18, 4, 19, C.cream));
   root.add(s.add.rectangle(14, -14, 11, 3, C.cream)); root.add(s.add.rectangle(14, -5, 11, 3, C.cream));
   root.add(s.add.rectangle(20, -10, 3, 11, C.cream));
@@ -344,15 +380,17 @@ function scoreTouchdown(s, time) {
   s.scores[s.possession]++;
   const scorer = s.players[s.possession][0];
   s.cameras.main.flash(250, 225, 255, 0);
-  s.cameras.main.shake(240, .008);
+  s.cameras.main.shake(160, .004);
   impactBurst(s, scorer.x, scorer.y, C.lime);
-  if (s.scores[s.possession] >= 3) {
-    s.phase = 'over'; s.message.setText(`TOUCHDOWN!\nTEAM ${s.possession + 1} WINS\n${s.scores[0]}  -  ${s.scores[1]}\nPRESS START TO PLAY AGAIN`).setAlpha(1);
-    s.cameras.main.stopFollow(); return;
-  }
-  const next = 1 - s.possession; s.pass = null; makeTeams(s, next); s.turnoverUntil = time + 1500;
-  s.message.setText('TOUCHDOWN!').setAlpha(1); s.messageUntil = time + 1050;
-  s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
+  s.phase = 'celebrating'; s.nextTeam = 1 - s.possession;
+  s.pendingWinner = s.scores[s.possession] >= 3 ? s.possession : null;
+  s.celebrationUntil = time + 2200; s.messageUntil = 0;
+  s.message.setText('TOUCHDOWN!').setFontSize('40px').setColor('#e1ff00').setAlpha(1).setScale(1);
+  const root = scorer.root, baseAngle = root.angle, baseY = root.y, baseScale = root.scaleX;
+  scorer.ballRing.setVisible(true);
+  s.tweens.add({ targets: root, angle: baseAngle + 18, y: baseY - 10, scaleX: baseScale * 1.14, scaleY: baseScale * .82, duration: 180, yoyo: true, repeat: 5, ease: 'Sine.InOut', onComplete: () => { if (root.active) root.setAngle(baseAngle).setPosition(fieldScreenX(scorer.y), fieldScreenY(scorer.x)).setScale(baseScale); } });
+  s.tweens.add({ targets: scorer.ballRing, scaleX: 1.3, scaleY: .7, alpha: .7, duration: 240, yoyo: true, repeat: 4 });
+  s.cameras.main.stopFollow();
 }
 
 function playCue(s, text, color, time, duration, shake = 0) {
