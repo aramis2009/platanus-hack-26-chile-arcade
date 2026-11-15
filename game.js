@@ -39,7 +39,7 @@ function create() {
   window.addEventListener('keydown', down); window.addEventListener('keyup', up);
   s.events.once('shutdown', () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); });
   s.phase = 'title'; s.players = [[], []]; s.possession = 0; s.scores = [0, 0]; s.turnoverUntil = 0; s.pass = null; s.twoPlayers = false; s.cpuThrowAt = 0; s.down = 1; s.driveStart = WORLD / 2;
-  s.cx = WORLD / 2; s.cl = W / 2;
+  s.cx = WORLD / 2; s.cl = W / 2; s.view = 1; s.ctrl = [];
   s.stadiumArt = s.add.graphics().setDepth(-2); drawStadium(s);
   s.fieldArt = s.add.graphics(); s.fieldMarks = []; makeFieldMarks(s);
   s.cover = s.add.image(W / 2, H / 2, 'cover').setScrollFactor(0).setDepth(16);
@@ -47,19 +47,19 @@ function create() {
   s.ui = s.cameras.add(0, 0, W, H);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawHudPlate(s.hudArt);
-  s.hudHeader = s.add.text(122, 24, 'OYE IBAI, ¿NOS VEMOS?', { fontFamily: 'monospace', fontSize: '8px', color: '#1671d9', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudLeft = s.add.text(51, 51, 'P1', { fontFamily: 'monospace', fontSize: '9px', color: '#0b1b3a', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudRight = s.add.text(193, 51, 'CPU', { fontFamily: 'monospace', fontSize: '9px', color: '#f7f9ff', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hud = s.add.text(122, 52, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '17px', color: '#f7f9ff', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  s.hudStatus = s.add.text(700, 57, '', { fontFamily: 'monospace', fontSize: '8px', color: '#c5d9f2', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudLeft = s.add.text(58, 41, 'P1', { fontFamily: 'Arial Black, sans-serif', fontSize: '22px', color: '#f7f9ff', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudRight = s.add.text(234, 41, 'CPU', { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#f7f9ff', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hud = s.add.text(146, 41, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '28px', color: '#f7f9ff', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.possBar = s.add.graphics().setScrollFactor(0).setDepth(20);
+  s.hudStatus = s.add.text(686, 60, '', { fontFamily: 'monospace', fontSize: '13px', color: '#c5d9f2', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.driveArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawDrivePlate(s.driveArt);
-  s.driveBanner = s.add.text(700, 36, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '15px', color: '#1671d9', fontStyle: 'bold', align: 'center', stroke: '#050d20', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
-  [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(false));
+  s.driveBanner = s.add.text(686, 31, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '26px', color: '#4aa8ff', fontStyle: 'bold', align: 'center', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  [s.hudArt, s.hudLeft, s.hudRight, s.hud, s.possBar, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(false));
   s.helpPlate = s.add.graphics().setScrollFactor(0).setDepth(19);
-  s.helpPlate.fillStyle(C.ink, .92).fillRect(130, 567, 540, 25);
-  s.helpPlate.lineStyle(1, C.cream, .38).strokeRect(130, 567, 540, 25);
-  s.help = s.add.text(W / 2, 580, '', { fontFamily: 'monospace', fontSize: '9px', color: '#f7f9ff', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.helpPlate.fillStyle(C.ink, .92).fillRect(60, 548, 680, 40);
+  s.helpPlate.lineStyle(1, C.cream, .38).strokeRect(60, 548, 680, 40);
+  s.help = s.add.text(W / 2, 568, '', { fontFamily: 'monospace', fontSize: '15px', color: '#f7f9ff', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.titleArt = s.add.graphics().setScrollFactor(0).setDepth(18);
   drawTitlePlate(s.titleArt);
   s.titleArt.setVisible(false);
@@ -112,7 +112,12 @@ function update(time, delta) {
   } else if (s.phase === 'paused') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'playing'; s.message.setVisible(false); }
   } else if (s.phase === 'over' && (s.inputState.pressed.START1 || s.inputState.pressed.START2)) startMatch(s, time);
-  if (s.players[0].length) renderWorld(s, time);
+  if (s.players[0].length) {
+    renderWorld(s, time);
+    // The help bar would cover the play, so in a match it only shows before the snap and while paused.
+    const help = s.phase === 'countdown' || s.phase === 'paused';
+    s.helpPlate.setVisible(help); s.help.setVisible(help);
+  }
   s.inputState.pressed = {};
   // Screen-fixed objects render only on the HUD camera, everything else only on the zoomed world camera.
   for (const o of s.children.list) o.cameraFilter = o.scrollFactorX ? s.ui.id : s.cameras.main.id;
@@ -121,7 +126,7 @@ function update(time, delta) {
 function startMatch(s, time) {
   s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700; s.down = 1; s.driveStart = WORLD / 2;
   s.pendingWinner = null; s.nearGoalCheered = false;
-  [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner, s.helpPlate, s.help].forEach(item => item.setVisible(true));
+  [s.hudArt, s.hudLeft, s.hudRight, s.hud, s.possBar, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(true));
   [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana, s.controlsArt, s.controlsTitle, s.controlsP1, s.controlsP2, s.controlsCredit, s.controlsPrompt].forEach(item => item.setVisible(false));
   s.cover.setVisible(false);
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
@@ -198,10 +203,13 @@ function makeTeams(s, firstTeam = 0, spot = WORLD / 2) {
 
 function createPlayer(s, team, number, x, y) {
   const color = team ? C.red : C.flagBlue, dark = team ? 0xb32119 : 0x0b54b8, trim = team ? C.cream : C.flagBlue, skin = 0xf0c49a;
+  // Brighter than the kit colours so the human-controlled marker reads against the navy turf from cabinet distance.
+  const pc = team ? 0xff5a4a : 0x4aa8ff;
   // Upright billboard with its origin at the feet, so the projected ground point anchors it.
   const root = s.add.container(0, 0);
   const ballRing = s.add.ellipse(0, 0, 62, 22, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
   root.add(s.add.ellipse(0, 0, 44, 13, C.black, .45));
+  const ring = s.add.ellipse(0, 0, 80, 28).setStrokeStyle(4, pc); root.add(ring);
   // Legs then arms; renderWorld pumps them while the player runs.
   const limbs = [s.add.rectangle(-7, -10, 10, 22, C.cream), s.add.rectangle(7, -10, 10, 22, C.cream), s.add.rectangle(-19, -43, 8, 23, color).setOrigin(.5, 0), s.add.rectangle(19, -43, 8, 23, color).setOrigin(.5, 0)];
   root.add(limbs);
@@ -212,13 +220,14 @@ function createPlayer(s, team, number, x, y) {
   // Team 0 wears a white helmet so the blue side still stands out against the navy turf.
   root.add(s.add.circle(0, -61, 11, team ? C.red : C.cream).setStrokeStyle(2, trim));
   root.add(s.add.rectangle(0, -62, 3, 20, trim));
-  // Team 1 runs at the camera, so only it shows a face and facemask; team 0 is seen from behind.
-  if (team) { root.add(s.add.rectangle(0, -58, 14, 8, skin)); root.add(s.add.rectangle(0, -59, 17, 2, 0x9fb0c8)); root.add(s.add.rectangle(0, -55, 17, 2, 0x9fb0c8)); }
+  // The defense faces the camera, so renderWorld shows the face and facemask only on that side.
+  const face = [s.add.rectangle(0, -58, 14, 8, skin), s.add.rectangle(0, -59, 17, 2, 0x9fb0c8), s.add.rectangle(0, -55, 17, 2, 0x9fb0c8)]; root.add(face);
   root.add(s.add.text(0, -34, String(number + 1), { fontFamily: 'Arial Black, sans-serif', fontSize: '14px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5));
   const roleLabel = s.add.text(0, 0, '', { fontFamily: 'monospace', fontSize: '10px', color: '#f7f9ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
-  const controlLabel = s.add.text(0, 0, team === 0 ? 'P1' : 'P2', { fontFamily: 'monospace', fontSize: '12px', color: team === 0 ? '#1671d9' : '#ef6a60', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
+  const controlLabel = s.add.text(0, 0, team === 0 ? 'P1' : 'P2', { fontFamily: 'Arial Black, sans-serif', fontSize: '16px', color: team ? '#ff5a4a' : '#4aa8ff', fontStyle: 'bold', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
   const banana = makeBanana(s, 15, -27, .5); root.add(banana); banana.setRotation(.6).setVisible(false);
-  return { root, limbs, banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
+  const arrow = s.add.triangle(0, -94, 0, 0, 22, 0, 11, 16, pc).setStrokeStyle(2, C.cream); root.add(arrow);
+  return { root, limbs, face, marks: [ring, arrow], banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
 }
 
 function playFrame(s, time, dt) {
@@ -226,8 +235,7 @@ function playFrame(s, time, dt) {
   if (p2Input) s.twoPlayers = true;
   const carrier = s.players[s.possession][0], attack = s.possession === 0 ? 1 : -1;
   const ballTarget = s.looseBall || carrier;
-  const human0 = s.possession === 0 ? s.players[0][0] : nearestPlayer(s.players[0], carrier);
-  const human1 = s.possession === 1 ? s.players[1][0] : nearestPlayer(s.players[1], carrier);
+  const [human0, human1] = humans(s, carrier);
   const controlled = s.twoPlayers && p2Input ? [human0, human1] : [human0];
   const controlledSet = new Set(controlled);
   for (let team = 0; team < 2; team++) {
@@ -235,13 +243,12 @@ function playFrame(s, time, dt) {
     for (const p of members) {
       let vx = 0, vy = 0;
       p.roleLabel.setText(roleName(p.position, team === s.possession));
-      p.controlLabel.setVisible(controlledSet.has(p));
       p.ballRing.setVisible(p === carrier && !s.pass);
       if (controlledSet.has(p)) {
         const pre = team === 0 ? 'P1_' : 'P2_';
-        // Up means downfield, away from the camera.
-        vx = (held(s, pre + 'U') ? 1 : 0) - (held(s, pre + 'D') ? 1 : 0);
-        vy = (held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0);
+        // Directions are screen-relative and the camera turns with possession, so they flip with the view.
+        vx = ((held(s, pre + 'U') ? 1 : 0) - (held(s, pre + 'D') ? 1 : 0)) * s.view;
+        vy = ((held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0)) * s.view;
         if (p === carrier && !s.pass && (s.inputState.pressed[pre + '1'] || s.inputState.pressed[pre + '3'])) {
           throwBanana(s, p, vx, vy, time, s.inputState.pressed[pre + '3']);
         }
@@ -273,7 +280,7 @@ function playFrame(s, time, dt) {
       const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.possession ? (p.position === 1 || p.position === 2 ? 205 : 178) : chaseGap > 160 ? 218 : 188;
       p.x = Phaser.Math.Clamp(p.x + vx / mag * speed * dt / 1000, 24, WORLD - 24);
       p.y = Phaser.Math.Clamp(p.y + vy / mag * speed * dt / 1000, TOP + 30, BOTTOM - 27);
-      p.moving = Math.hypot(vx, vy) > .15; p.lean = p.moving ? vy / mag : 0;
+      p.moving = Math.hypot(vx, vy) > .15; p.lean = p.moving ? vy / mag * s.view : 0;
       p.banana.setVisible(p === carrier && !s.pass && !s.looseBall);
     }
   }
@@ -482,7 +489,7 @@ function updateLooseBall(s, time) {
 
 function setPossession(s, team, player) {
   if (team !== s.possession) s.nearGoalCheered = false;
-  s.possession = team;
+  s.possession = team; s.view = team ? -1 : 1;
   s.cpuThrowAt = 0;
   const group = s.players[team];
   if (player && player !== group[0]) {
@@ -509,6 +516,17 @@ function finishPlay(s, spot, time, result) {
   playCue(s, call, turnover ? '#ef6a60' : '#1671d9', time, 850);
   updateHud(s);
   s.phase = 'spotting'; s.spotUntil = time + 850;
+}
+
+// A defender keeps control until another is clearly closer, so control does not flicker between two equidistant players.
+function humans(s, carrier) {
+  const d = p => Phaser.Math.Distance.Between(p.x, p.y, carrier.x, carrier.y);
+  return [0, 1].map(t => {
+    if (t === s.possession) return s.players[t][0];
+    const best = nearestPlayer(s.players[t], carrier);
+    if (!s.players[t].includes(s.ctrl[t]) || d(best) + 60 < d(s.ctrl[t])) s.ctrl[t] = best;
+    return s.ctrl[t];
+  });
 }
 
 function nearestPlayer(players, target) { return players.slice(1).reduce((a, b) => Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y) < Phaser.Math.Distance.Between(b.x, b.y, target.x, target.y) ? a : b, players[1]); }
@@ -584,9 +602,10 @@ function updateHud(s) {
   const downName = ['1ST', '2ND', '3RD', '4TH'][s.down - 1];
   const mode = s.twoPlayers ? 'P1 VS P2' : 'P1 VS CPU';
   s.hudLeft.setText('P1'); s.hudRight.setText(s.twoPlayers ? 'P2' : 'CPU');
-  s.hud.setText(`${s.scores[0]}  —  ${s.scores[1]}`);
+  s.hud.setText(`${s.scores[0]} - ${s.scores[1]}`);
   s.hudStatus.setText(mode);
   s.driveBanner.setText(`${downName} & ${toGo}`);
+  s.possBar.clear().fillStyle(C.gold).fillRect(s.possession ? 200 : 24, 64, 68, 5);
   if (!s.twoPlayers && s.possession === 1) s.help.setText('P1 MOVE WASD   I TO HIT     CPU RUNS / PASSES');
   else if (!s.twoPlayers) s.help.setText('MOVE WASD   AIM + U PASS   AIM + O LONG   I JUKE');
   else if (s.possession === 0) s.help.setText('P1 WASD   AIM + U / O PASS   P2 ARROWS   T HIT');
@@ -595,10 +614,12 @@ function updateHud(s) {
 
 // Chase-camera projection. Field x is depth and `l` is the lateral position in field pixels.
 // Returns [screenX, screenY, scale]; the camera never rolls, so equal depths share one screen row.
-function pj(s, x, l) {
-  const k = FOC / Math.max(x - s.cx + BACK, 40);
-  return [W / 2 + (l - s.cl) * k, HZ + CAMH * k, k];
+function pv(s, u, m) {
+  const k = FOC / Math.max(u - s.cx + BACK, 40);
+  return [W / 2 + (m - s.cl) * k, HZ + CAMH * k, k];
 }
+// The camera always sits behind the attacking team, so team 1's view is the field rotated 180 degrees.
+function pj(s, x, l) { return s.view > 0 ? pv(s, x, l) : pv(s, WORLD - x, W - l); }
 function proj(s, x, y) { return pj(s, x, fieldScreenX(y)); }
 
 function addFieldMark(s, mark, x, l) { mark.fx = x; mark.fl = l; s.fieldMarks.push(mark.setDepth(1)); return mark; }
@@ -628,25 +649,33 @@ function makeFieldMarks(s) {
 
 function renderWorld(s, time) {
   const g = s.fieldArt, L = 18, R = W - 18, carrier = s.players[s.possession][0], FAR = WORLD + 50;
-  // When team 1 has the ball it runs at the camera, so pull back to keep the defenders in frame.
-  s.cx += (carrier.x - (s.possession ? 190 : 0) - s.cx) * .08;
-  s.cl += (Phaser.Math.Clamp(fieldScreenX(carrier.y), 280, 520) - s.cl) * .08;
+  const U = x => s.view > 0 ? x : WORLD - x, M = l => s.view > 0 ? l : W - l;
+  if (s.camView !== s.view) {
+    // Possession changed: swing the camera round to the new attackers, masking the cut with a quick dark flash.
+    if (s.camView) { s.cx = WORLD - s.cx; s.cl = W - s.cl; s.cameras.main.flash(220, 5, 13, 32); }
+    s.camView = s.view;
+  }
+  s.cx += (U(carrier.x) - s.cx) * .08;
+  s.cl += (M(Phaser.Math.Clamp(fieldScreenX(carrier.y), 280, 520)) - s.cl) * .08;
   const x0 = s.cx - BACK + NEAR;
   const poly = (color, ...p) => { g.fillStyle(color); g.beginPath(); g.moveTo(p[0], p[1]); for (let i = 2; i < 8; i += 2) g.lineTo(p[i], p[i + 1]); g.closePath(); g.fillPath(); };
+  // band and stripe take field coordinates and clip against the camera in view space.
   const band = (xa, xb, la, lb, color) => {
-    xa = Math.max(xa, x0); if (xb <= xa) return;
-    const a = pj(s, xa, la), b = pj(s, xa, lb), c = pj(s, xb, lb), d = pj(s, xb, la);
+    let ua = U(xa), ub = U(xb);
+    if (ua > ub) [ua, ub] = [ub, ua];
+    ua = Math.max(ua, x0); if (ub <= ua) return;
+    const a = pv(s, ua, M(la)), b = pv(s, ua, M(lb)), c = pv(s, ub, M(lb)), d = pv(s, ub, M(la));
     poly(color, a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1]);
   };
   const stripe = (x, la, lb, t, color, alpha = 1) => {
-    if (x < x0) return;
-    const a = pj(s, x, la), h = Math.max(1, t * a[2]);
-    g.fillStyle(color, alpha); g.fillRect(a[0], a[1] - h / 2, (lb - la) * a[2], h);
+    if (U(x) < x0) return;
+    const a = pv(s, U(x), Math.min(M(la), M(lb))), h = Math.max(1, t * a[2]);
+    g.fillStyle(color, alpha); g.fillRect(a[0], a[1] - h / 2, Math.abs(lb - la) * a[2], h);
   };
   g.clear();
   g.fillStyle(C.ink); g.fillRect(0, HZ, W, H - HZ);
   // Far stand: seat rows with crowd flecks that slide with the camera, above a perimeter board.
-  const [, sb, kb] = pj(s, FAR, 0);
+  const [, sb, kb] = pv(s, FAR, 0);
   for (let r = 9; r >= 0; r--) {
     g.fillStyle(r % 2 ? 0x13294f : 0x0e2040); g.fillRect(0, sb - (42 + r * 16) * kb, W, 16 * kb + 1);
     for (let c = 0; c < 36; c++) {
@@ -658,18 +687,18 @@ function renderWorld(s, time) {
   g.fillStyle(C.cream); g.fillRect(0, sb - 26 * kb, W, 2);
   // Side stands: a low wall along each touchline and a raked bank of seats behind it.
   for (const [la, lb] of [[-70, -330], [W + 70, W + 330]]) {
-    const a = pj(s, x0, la), b = pj(s, FAR, la), c = pj(s, FAR, lb), d = pj(s, x0, lb);
+    const a = pv(s, x0, la), b = pv(s, FAR, la), c = pv(s, FAR, lb), d = pv(s, x0, lb);
     poly(0x13294f, a[0], a[1] - 40 * a[2], b[0], b[1] - 40 * b[2], c[0], c[1] - 260 * c[2], d[0], d[1] - 260 * d[2]);
     poly(C.flagBlue, a[0], a[1], b[0], b[1], b[0], b[1] - 40 * b[2], a[0], a[1] - 40 * a[2]);
   }
   band(0, END, L, R, 0x0039a6); band(WORLD - END, WORLD, L, R, C.red);
   // Mow bands flip every 5 yards so the turf pattern lines up with the painted yard lines.
   for (let i = 0; i < 20; i++) band(END + i * 77, END + i * 77 + 77, L, R, i % 2 ? 0x1d3f72 : 0x14305a);
-  for (let n = Math.max(1, Math.ceil((x0 - END) / 15.4)); n < 100; n++) {
+  for (let n = 1; n < 100; n++) {
     const x = END + n * 15.4;
     if (n % 5 === 0) stripe(x, L, R, n % 10 ? 2 : 3, C.cream, n % 10 ? .62 : .92);
     // Single-yard ticks are dropped in the distance, where they would only shimmer.
-    else if (x - x0 < 700) for (const l of [L + 5, R - 17, W / 2 - 96, W / 2 + 84]) stripe(x, l, l + 12, 2, C.cream, .7);
+    else if (U(x) - x0 < 700) for (const l of [L + 5, R - 17, W / 2 - 96, W / 2 + 84]) stripe(x, l, l + 12, 2, C.cream, .7);
   }
   band(0, WORLD, L, L + 5, C.cream); band(0, WORLD, R - 5, R, C.cream);
   for (const x of [3, END, WORLD - END, WORLD - 3]) stripe(x, L, R, 6, C.cream);
@@ -678,7 +707,7 @@ function renderWorld(s, time) {
     stripe(gain, L, R, 3, C.flagBlue, .8); stripe(carrier.x, L, R, 4, C.red, .95);
   }
   for (const x of [12, WORLD - 12]) {
-    if (x < x0) continue;
+    if (U(x) < x0) continue;
     // Goal posts and pylons stand upright, so their height scales with depth like the players do.
     const [px, py, k] = pj(s, x, W / 2);
     g.fillStyle(C.gold); g.fillRect(px - 3 * k, py - 46 * k, 6 * k, 46 * k); g.fillRect(px - 46 * k, py - 50 * k, 92 * k, 5 * k);
@@ -686,24 +715,27 @@ function renderWorld(s, time) {
   }
   g.fillStyle(0xff7a1a);
   for (const x of [4, END, WORLD - END, WORLD - 4]) {
-    if (x < x0) continue;
+    if (U(x) < x0) continue;
     for (const l of [L, R]) { const [px, py, k] = pj(s, x, l); g.fillRect(px - 4 * k, py - 16 * k, 8 * k, 16 * k); }
   }
   // Haze toward the horizon gives the far end of the field some depth.
   for (let i = 1; i < 5; i++) { g.fillStyle(C.black, .09); g.fillRect(0, HZ, W, i * 16); }
   for (const m of s.fieldMarks) {
-    const z = m.fx - s.cx + BACK, k = FOC / z;
+    const z = U(m.fx) - s.cx + BACK, k = FOC / z;
     // Flat ground art is squashed by the same factor the ground plane is foreshortened at that depth.
-    if (m.setVisible(z > NEAR * .7 && k > .22).visible) m.setPosition(W / 2 + (m.fl - s.cl) * k, HZ + CAMH * k).setScale(k, k * CAMH / z);
+    if (m.setVisible(z > NEAR * .7 && k > .22).visible) m.setPosition(...pj(s, m.fx, m.fl).slice(0, 2)).setScale(k, k * CAMH / z);
   }
+  const [h0, h1] = humans(s, carrier);
   for (const p of s.players.flat()) {
     const [sx, sy, k] = proj(s, p.x, p.y), run = s.phase === 'playing' && p.moving ? Math.sin(time / 55 + p.number * 2) : 0, hop = p.hop || 0;
     p.limbs[0].y = -10 - Math.max(0, run) * 7; p.limbs[1].y = -10 - Math.max(0, -run) * 7;
     p.limbs[2].scaleY = 1 - run * .28; p.limbs[3].scaleY = 1 + run * .28;
     // Nearer players (smaller depth) must draw over farther ones.
-    p.root.setPosition(sx, sy - hop * 18 * k).setScale(k * (1 + hop * .1), k * (1 - hop * .12)).setRotation((p.lean || 0) * .1 + hop * .2).setDepth(8 - p.x * .001).setVisible(k < 2.6);
-    p.roleLabel.setPosition(sx, sy - 80 * k).setVisible(k < 2.6);
-    p.controlLabel.setPosition(sx, sy - 80 * k - 13);
+    p.root.setPosition(sx, sy - hop * 18 * k).setScale(k * (1 + hop * .1), k * (1 - hop * .12)).setRotation((p.lean || 0) * .1 + hop * .2).setDepth(8 + k * .01).setVisible(k < 2.6);
+    const mine = p === h0 || (s.twoPlayers && p === h1);
+    p.marks.forEach(m => m.setVisible(mine)); p.face.forEach(f => f.setVisible(p.team !== s.possession));
+    p.roleLabel.setPosition(sx, sy - 80 * k).setVisible(k < 2.6 && !mine);
+    p.controlLabel.setPosition(sx, sy - 112 * k).setVisible(mine && k < 2.6);
   }
 }
 
@@ -720,21 +752,18 @@ function drawStadium(s) {
 }
 
 function drawHudPlate(g) {
-  g.fillStyle(C.black, .88); g.fillRect(18, 12, 208, 57);
-  g.fillStyle(0x214f91, .9); g.fillRect(18, 12, 208, 4); g.fillRect(18, 12, 4, 57);
-  g.fillStyle(C.ink, .92); g.fillRect(25, 19, 194, 43);
-  g.fillStyle(C.flagBlue, .94); g.fillRect(30, 38, 42, 21);
-  g.fillStyle(C.red, .94); g.fillRect(172, 38, 42, 21);
-  g.lineStyle(1, C.cream, .74); g.strokeRect(18, 12, 208, 57);
-  g.lineStyle(1, C.blue, .45); g.lineBetween(25, 35, 219, 35);
+  g.fillStyle(C.black, .9); g.fillRect(16, 10, 260, 62);
+  g.fillStyle(C.ink, .95); g.fillRect(22, 16, 248, 50);
+  g.fillStyle(C.flagBlue); g.fillRect(24, 18, 68, 44);
+  g.fillStyle(C.red); g.fillRect(200, 18, 68, 44);
+  g.lineStyle(2, C.cream, .8); g.strokeRect(16, 10, 260, 62);
 }
 
 function drawDrivePlate(g) {
-  g.fillStyle(C.black, .88); g.fillRect(618, 12, 164, 57);
-  g.fillStyle(0x214f91, .9); g.fillRect(778, 12, 4, 57); g.fillRect(618, 65, 164, 4);
-  g.fillStyle(C.ink, .92); g.fillRect(625, 19, 150, 43);
-  g.lineStyle(1, C.cream, .74); g.strokeRect(618, 12, 164, 57);
-  g.lineStyle(1, C.gold, .72); g.lineBetween(631, 45, 769, 45);
+  g.fillStyle(C.black, .9); g.fillRect(588, 10, 196, 62);
+  g.fillStyle(C.ink, .95); g.fillRect(594, 16, 184, 50);
+  g.lineStyle(2, C.cream, .8); g.strokeRect(588, 10, 196, 62);
+  g.lineStyle(1, C.gold, .72); g.lineBetween(602, 48, 770, 48);
 }
 
 function drawLoadingPlate(g) {
