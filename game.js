@@ -20,9 +20,13 @@ for (const [code, keys] of Object.entries(CABINET_KEYS)) for (const key of keys)
 const config = {
   type: Phaser.AUTO, width: W, height: H, parent: 'game-root', backgroundColor: '#07180f',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-  scene: { create, update },
+  scene: { preload, create, update },
 };
 new Phaser.Game(config);
+
+function preload() {
+  this.load.image('cover', 'cover.png');
+}
 
 function create() {
   const s = this;
@@ -35,6 +39,7 @@ function create() {
   s.stadiumArt = s.add.graphics().setDepth(-2); drawStadium(s);
   s.fieldArt = s.add.graphics(); s.fieldMarks = []; drawField(s);
   s.fieldMarks.forEach(mark => mark.setVisible(false));
+  s.cover = s.add.image(W / 2, H / 2, 'cover').setScrollFactor(0).setDepth(16);
   s.playLine = s.add.graphics().setDepth(3);
   s.cameras.main.setBounds(0, 0, W, WORLD).setScroll(0, WORLD / 2 - H / 2);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
@@ -54,13 +59,22 @@ function create() {
   s.help = s.add.text(W / 2, 580, '', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.titleArt = s.add.graphics().setScrollFactor(0).setDepth(18);
   drawTitlePlate(s.titleArt);
-  s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
-  s.title = s.add.text(137, 205, 'OYE IBAI,', { fontFamily: 'Arial Black, sans-serif', fontSize: '48px', color: '#fff4cf', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
-  s.titleAccent = s.add.text(137, 267, '¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#e1ff00', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
-  s.tagline = s.add.text(142, 326, 'A BANANA FOOTBALL SENDOFF.', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
-  s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
-  s.prompt = s.add.text(142, 446, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.titleArt.setVisible(false);
+  s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.title = s.add.text(137, 205, 'OYE IBAI,', { fontFamily: 'Arial Black, sans-serif', fontSize: '48px', color: '#fff4cf', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.titleAccent = s.add.text(137, 267, '¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#e1ff00', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.tagline = s.add.text(142, 326, 'A BANANA FOOTBALL SENDOFF.', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20).setVisible(false);
+  s.prompt = s.add.text(694, 34, 'PRESS ENTER', { fontFamily: 'monospace', fontSize: '11px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 3 }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.titleBanana = makeBanana(s, 572, 295, 2.2).setRotation(-.28).setScrollFactor(0).setDepth(20);
+  s.titleBanana.setVisible(false);
+  s.loadingArt = s.add.graphics().setScrollFactor(0).setDepth(35); drawLoadingPlate(s.loadingArt);
+  s.loadingTitle = s.add.text(W / 2, 242, 'GET READY', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#fff4cf', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.loadingCredit = s.add.text(W / 2, 305, 'CREATOR: ARAMIS2009', { fontFamily: 'monospace', fontSize: '18px', color: '#e1ff00', fontStyle: 'bold', stroke: '#07180f', strokeThickness: 4 }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.loadingStatus = s.add.text(W / 2, 448, 'LOADING GAME', { fontFamily: 'monospace', fontSize: '12px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(36);
+  s.loadingProgress = s.add.graphics().setScrollFactor(0).setDepth(36);
+  s.loadingBanana = makeBanana(s, W / 2, 376, 1.2).setScrollFactor(0).setDepth(36);
+  [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(false));
   s.help.setText('AIM WASD  ·  PASS U  ·  LONG PASS O');
   s.cameras.main.setFollowOffset(0, 0);
 }
@@ -69,7 +83,9 @@ function update(time, delta) {
   const s = this, dt = Math.min(delta, 40);
   if (s.phase === 'title') {
     s.prompt.setAlpha(.68 + Math.sin(time / 300) * .25);
-    if (s.inputState.pressed.START1 || s.inputState.pressed.START2) startMatch(s, time);
+    if (s.inputState.pressed.START1 || s.inputState.pressed.START2) showLoading(s, time);
+  } else if (s.phase === 'loading') {
+    updateLoading(s, time);
   } else if (s.phase === 'playing') {
     if (s.inputState.pressed.START1 || s.inputState.pressed.START2) { s.phase = 'paused'; s.message.setText('PAUSED\nPRESS START TO RESUME').setVisible(true); }
     else playFrame(s, time, dt);
@@ -90,12 +106,28 @@ function update(time, delta) {
 function startMatch(s, time) {
   s.scores = [0, 0]; s.possession = 0; s.pass = null; s.twoPlayers = false; s.phase = 'countdown'; s.turnoverUntil = time + 1700; s.down = 1; s.driveStart = WORLD / 2;
   s.pendingWinner = null;
-  [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner].forEach(item => item.setVisible(true));
+  [s.hudArt, s.hudHeader, s.hudLeft, s.hudRight, s.hud, s.hudStatus, s.driveArt, s.driveBanner, s.helpPlate, s.help].forEach(item => item.setVisible(true));
+  [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(false));
+  s.cover.setVisible(false);
   s.fieldMarks.forEach(mark => mark.setVisible(true));
   s.titleArt.setVisible(false); s.titleTag.setVisible(false); s.title.setVisible(false); s.titleAccent.setVisible(false); s.tagline.setVisible(false); s.modeText.setVisible(false); s.prompt.setVisible(false); s.titleBanana.setVisible(false); s.message?.destroy();
   s.message = s.add.text(W / 2, H / 2, '', { fontFamily: 'monospace', fontSize: '30px', color: '#e1ff00', fontStyle: 'bold', align: 'center', stroke: '#092218', strokeThickness: 6 }).setOrigin(.5).setScrollFactor(0).setDepth(30);
   makeTeams(s, 0, s.driveStart); updateHud(s); s.cameras.main.startFollow(s.players[s.possession][0].root, false, .06, .06);
   beginCountdown(s, time);
+}
+
+function showLoading(s, time) {
+  s.phase = 'loading'; s.loadingUntil = time + 1800;
+  s.cover.setVisible(false); s.prompt.setVisible(false); s.helpPlate.setVisible(false); s.help.setVisible(false);
+  [s.loadingArt, s.loadingTitle, s.loadingCredit, s.loadingStatus, s.loadingProgress, s.loadingBanana].forEach(item => item.setVisible(true));
+  updateLoading(s, time);
+}
+
+function updateLoading(s, time) {
+  const progress = Phaser.Math.Clamp(1 - (s.loadingUntil - time) / 1800, 0, 1);
+  s.loadingProgress.clear(); s.loadingProgress.fillStyle(C.lime, .95).fillRect(180, 424, 440 * progress, 9);
+  s.loadingBanana.setRotation(time / 450);
+  if (time >= s.loadingUntil) startMatch(s, time);
 }
 
 function beginCountdown(s, time) {
@@ -591,6 +623,17 @@ function drawDrivePlate(g) {
   g.fillStyle(C.ink, .92); g.fillRect(625, 19, 150, 43);
   g.lineStyle(1, C.cream, .74); g.strokeRect(618, 12, 164, 57);
   g.lineStyle(1, C.gold, .72); g.lineBetween(631, 45, 769, 45);
+}
+
+function drawLoadingPlate(g) {
+  g.fillStyle(C.black, .97); g.fillRect(0, 0, W, H);
+  g.fillStyle(C.ink, .95); g.fillRect(72, 104, 656, 392);
+  g.fillStyle(C.lime, .95); g.fillRect(72, 104, 178, 6);
+  g.fillStyle(C.red, .95); g.fillRect(550, 490, 178, 6);
+  g.lineStyle(3, C.cream, .82); g.strokeRect(72, 104, 656, 392);
+  g.lineStyle(1, C.blue, .48); g.strokeRect(84, 116, 632, 368);
+  g.fillStyle(C.black, .9); g.fillRect(180, 424, 440, 9);
+  g.lineStyle(1, C.cream, .52); g.strokeRect(180, 424, 440, 9);
 }
 
 function drawTitlePlate(g) {
