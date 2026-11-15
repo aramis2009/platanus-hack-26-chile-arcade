@@ -39,7 +39,7 @@ function create() {
   s.cameras.main.setBounds(0, 0, W, WORLD).setScroll(0, WORLD / 2 - H / 2);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawHudPlate(s.hudArt);
-  s.hudHeader = s.add.text(122, 24, 'OYE IBAI, NOS VEMOS', { fontFamily: 'monospace', fontSize: '8px', color: '#e1ff00', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
+  s.hudHeader = s.add.text(122, 24, 'OYE IBAI, ¿NOS VEMOS?', { fontFamily: 'monospace', fontSize: '8px', color: '#e1ff00', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.hudLeft = s.add.text(51, 51, 'P1', { fontFamily: 'monospace', fontSize: '9px', color: '#092218', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.hudRight = s.add.text(193, 51, 'CPU', { fontFamily: 'monospace', fontSize: '9px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
   s.hud = s.add.text(122, 52, '', { fontFamily: 'Arial Black, sans-serif', fontSize: '17px', color: '#fff4cf', fontStyle: 'bold', align: 'center' }).setOrigin(.5).setScrollFactor(0).setDepth(20);
@@ -56,7 +56,7 @@ function create() {
   drawTitlePlate(s.titleArt);
   s.titleTag = s.add.text(142, 147, 'PLATANUS ARCADE  /  SANTIAGO 2026', { fontFamily: 'monospace', fontSize: '12px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
   s.title = s.add.text(137, 205, 'OYE IBAI,', { fontFamily: 'Arial Black, sans-serif', fontSize: '48px', color: '#fff4cf', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
-  s.titleAccent = s.add.text(137, 267, 'NOS VEMOS', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#e1ff00', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
+  s.titleAccent = s.add.text(137, 267, '¿NOS VEMOS?', { fontFamily: 'Arial Black, sans-serif', fontSize: '43px', color: '#e1ff00', fontStyle: 'bold', stroke: '#092218', strokeThickness: 6 }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
   s.tagline = s.add.text(142, 326, 'A BANANA FOOTBALL SENDOFF.', { fontFamily: 'monospace', fontSize: '12px', color: '#c1d9c5', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
   s.modeText = s.add.text(142, 379, 'SOLO  ·  YOU VS CPU     /     LOCAL  ·  2 PLAYERS', { fontFamily: 'monospace', fontSize: '11px', color: '#fff4cf', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
   s.prompt = s.add.text(142, 446, 'PRESS ENTER TO KICK OFF', { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#e1ff00', fontStyle: 'bold' }).setOrigin(0, .5).setScrollFactor(0).setDepth(20);
