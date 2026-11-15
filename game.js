@@ -35,6 +35,7 @@ function create() {
   s.stadiumArt = s.add.graphics().setDepth(-2); drawStadium(s);
   s.fieldArt = s.add.graphics(); s.fieldMarks = []; drawField(s);
   s.fieldMarks.forEach(mark => mark.setVisible(false));
+  s.playLine = s.add.graphics().setDepth(3);
   s.cameras.main.setBounds(0, 0, W, WORLD).setScroll(0, WORLD / 2 - H / 2);
   s.hudArt = s.add.graphics().setScrollFactor(0).setDepth(19);
   drawHudPlate(s.hudArt);
@@ -415,6 +416,13 @@ function updateHud(s) {
   s.hud.setText(`${s.scores[0]}  —  ${s.scores[1]}`);
   s.hudStatus.setText(`${mode}    ·    FIRST TO 3 TOUCHDOWNS`);
   s.driveBanner.setText(`${Math.max(0, yards)} YDS TO END ZONE`);
+  s.playLine.clear();
+  if (s.phase === 'playing' || s.phase === 'countdown' || s.phase === 'celebrating') {
+    const y = carrier.x;
+    s.playLine.lineStyle(3, C.red, .95); s.playLine.lineBetween(24, y, W - 24, y);
+    s.playLine.lineStyle(1, C.cream, .88); s.playLine.lineBetween(24, y - 5, W - 24, y - 5);
+    s.playLine.fillStyle(C.red, 1); s.playLine.fillTriangle(30, y - 8, 42, y, 30, y + 8);
+  }
   if (!s.twoPlayers && s.possession === 1) s.help.setText('P1 MOVE WASD   TACKLE I     CPU RUNS / PASSES');
   else if (!s.twoPlayers) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     CPU DEFENDS');
   else if (s.possession === 0) s.help.setText('P1 MOVE WASD   PASS U / LONG O   JUKE I     P2 MOVE ARROWS   TACKLE T');
@@ -424,31 +432,38 @@ function updateHud(s) {
 function drawField(s) {
   const g = s.fieldArt; g.clear();
   g.fillStyle(C.grass); g.fillRect(18, 0, W - 36, WORLD);
-  for (let y = END; y < WORLD - END; y += 154) {
-    g.fillStyle(Math.floor(y / 154) % 2 ? 0x1c5739 : 0x164a32, .6); g.fillRect(20, y, W - 40, 77);
+  for (let y = 0; y < WORLD; y += 44) {
+    const band = Math.floor(y / 44);
+    g.fillStyle(band % 2 ? 0x1c5739 : 0x164a32, .34); g.fillRect(20, y, W - 40, 22);
   }
-  for (const y of [0, WORLD - END]) {
-    g.fillStyle(0x0d3b28); g.fillRect(18, y, W - 36, END);
+  for (let i = 0; i < 240; i++) {
+    const x = 30 + ((i * 137) % 740), y = 8 + ((i * 283) % (WORLD - 16));
+    g.fillStyle(i % 3 ? 0x7fa76a : 0x092218, i % 3 ? .1 : .13); g.fillRect(x, y, 2 + i % 3, 2);
+  }
+  for (const [y, tint] of [[0, 0x174d3c], [WORLD - END, 0x3f3b19]]) {
+    g.fillStyle(tint, .94); g.fillRect(18, y, W - 36, END);
+    g.fillStyle(C.black, .12); g.fillRect(18, y + END / 2 - 1, W - 36, 2);
     for (let x = 38; x < W - 30; x += 38) {
-      g.lineStyle(12, 0x1c5639, .58); g.lineBetween(x, y + 10, x + 24, y + END - 10);
+      g.lineStyle(10, tint === 0x174d3c ? 0x28614a : 0x555126, .48); g.lineBetween(x, y + 10, x + 24, y + END - 10);
     }
-    g.lineStyle(3, C.cream, .82); g.strokeRect(24, y + 6, W - 48, END - 12);
-    addFieldMark(s, s.add.text(W / 2, y + END / 2, 'PLATANUS HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: '#e1ff00', fontStyle: 'bold', stroke: '#0d3b28', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
+    g.lineStyle(4, C.cream, .9); g.strokeRect(24, y + 6, W - 48, END - 12);
+    g.lineStyle(1, C.cream, .45); g.strokeRect(32, y + 14, W - 64, END - 28);
+    addFieldMark(s, s.add.text(W / 2, y + END / 2, 'PLATANUS HACK 26', { fontFamily: 'Arial Black, sans-serif', fontSize: '25px', color: tint === 0x174d3c ? '#e1ff00' : '#fff4cf', fontStyle: 'bold', stroke: '#0d3b28', strokeThickness: 5 }).setOrigin(.5).setDepth(2));
   }
   g.lineStyle(3, C.cream, .76); g.strokeRect(18, 0, W - 36, WORLD);
   g.lineStyle(2, C.cream, .68);
   for (let y = END; y <= WORLD - END; y += 77) {
     const tenYardLine = Math.round((y - END) / 77) % 2 === 0;
-    g.lineStyle(tenYardLine ? 2 : 1, C.cream, tenYardLine ? .76 : .34);
+    g.lineStyle(tenYardLine ? 3 : 1, C.cream, tenYardLine ? .84 : .38);
     g.lineBetween(20, y, W - 20, y);
-    g.lineBetween(220, y - 5, 248, y - 5); g.lineBetween(220, y + 5, 248, y + 5);
-    g.lineBetween(W - 248, y - 5, W - 220, y - 5); g.lineBetween(W - 248, y + 5, W - 220, y + 5);
+    g.lineBetween(220, y - 7, 250, y - 7); g.lineBetween(220, y + 7, 250, y + 7);
+    g.lineBetween(W - 250, y - 7, W - 220, y - 7); g.lineBetween(W - 250, y + 7, W - 220, y + 7);
   }
-  g.lineStyle(4, C.lime, .88); g.lineBetween(18, END, W - 18, END); g.lineBetween(18, WORLD - END, W - 18, WORLD - END);
+  g.lineStyle(5, C.lime, .94); g.lineBetween(18, END, W - 18, END); g.lineBetween(18, WORLD - END, W - 18, WORLD - END);
   for (let y = END + 154; y < WORLD - END; y += 154) {
     const yards = Math.round((y - END) / 15.4);
-    s.add.text(70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 3 }).setOrigin(.5).setDepth(2);
-    s.add.text(W - 70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '18px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 3 }).setOrigin(.5).setDepth(2);
+    s.add.text(70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
+    s.add.text(W - 70, y + 10, String(yards), { fontFamily: 'Arial Black, sans-serif', fontSize: '20px', color: '#f5f4d8', fontStyle: 'bold', stroke: '#164a32', strokeThickness: 4 }).setOrigin(.5).setDepth(2);
   }
   const midY = WORLD / 2;
   addFieldMark(s, s.add.ellipse(W / 2, midY, 270, 160, C.ink, .04).setStrokeStyle(4, C.lime, .65).setDepth(1));
