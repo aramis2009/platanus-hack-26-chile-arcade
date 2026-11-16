@@ -35,6 +35,8 @@ Phaser.GameObjects.GameObject.prototype.ui = function (d) { return this.setScrol
 const sin = Math.sin, abs = Math.abs, rand = Math.random, dst = Phaser.Math.Distance.Between, clp = Phaser.Math.Clamp, lrp = Phaser.Math.Linear, rbt = Phaser.Math.Between;
 // Loudness of the music bus; the crowd and the effects share the same master gain.
 const MUSIC_VOL = .4;
+// Centred text on the scene: nearly every label in the game is centred on its position.
+const T = (s, x, y, t, o) => s.add.text(x, y, t, o).setOrigin(.5);
 const TOP_KEY = 'oye-ibai:top5';
 const TOUCHDOWN_EMOJIS =['🏈', '🎉', '🏆', '🕺', '🔥', '🍌', '🙌', '⚡', '👑', '💥'];
 
@@ -64,8 +66,8 @@ function create() {
   const up = e => { const c = KEY_TO_ARCADE[(e.key || '').toLowerCase()]; if (c) s.b.held[c] = false; };
   window.addEventListener('keydown', down); window.addEventListener('keyup', up);
   s.events.once('shutdown', () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); });
-  s.c = 'title'; s.d = [[], []]; s.a = 0; s.P = [0, 0]; s.e = 0; s.g = null; s.kick = null; s.H = null; s.duo = false; s.F = 0; s.A = 1; s.j = WORLD / 2;
-  s.cx = WORLD / 2; s.cl = W / 2; s.s = 1; s.ctrl = []; s.top = [];
+  s.c = 'title'; s.d = [[], []]; s.a = 0; s.P = [0, 0]; s.e = 0; s.g = null; s.kick = null; s.duo = false; s.F = 0; s.A = 1; s.j = WORLD / 2;
+  s.cx = WORLD / 2; s.cl = W / 2; s.s = 1; s.ch = CAMH; s.ctrl = []; s.lk = 0; s.top = [];
   // Stored records survive releases, so anything that is not a well-formed entry is dropped.
   window.platanusArcadeStorage?.get(TOP_KEY).then(r => {
     if (Array.isArray(r?.value)) s.top = r.value.filter(e => typeof e?.n === 'string' && Number.isFinite(e.s)).slice(0, 5);
@@ -79,32 +81,32 @@ function create() {
   s.ui = s.cameras.add(0, 0, W, H);
   s.M = s.add.graphics().ui(19);
   s.p = [0, 1]; s.T = [TEAMS[0], TEAMS[1]];
-  s.V = s.add.text(58, 41, 'P1', { ...AB, fontSize: '22px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 5 }).setOrigin(.5).ui(20);
-  s.D = s.add.text(234, 41, 'CPU', { ...AB, fontSize: '22px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 5 }).setOrigin(.5).ui(20);
-  s.hud = s.add.text(146, 41, '', { ...AB, fontSize: '28px', color: '#f7f9ff', align: 'center' }).setOrigin(.5).ui(20);
+  s.V = T(s, 58, 41, 'P1', { ...AB, fontSize: '22px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 5 }).ui(20);
+  s.D = T(s, 234, 41, 'CPU', { ...AB, fontSize: '22px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 5 }).ui(20);
+  s.hud = T(s, 146, 41, '', { ...AB, fontSize: '28px', color: '#f7f9ff', align: 'center' }).ui(20);
   s.Q = s.add.graphics().ui(20);
-  s.U = s.add.text(686, 60, '', { ...MO, fontSize: '13px', color: '#c5d9f2', align: 'center' }).setOrigin(.5).ui(20);
+  s.U = T(s, 686, 60, '', { ...MO, fontSize: '13px', color: '#c5d9f2', align: 'center' }).ui(20);
   s.E = s.add.graphics().ui(19);
   drawDrivePlate(s.E);
-  s.z = s.add.text(686, 31, '', { ...AB, fontSize: '26px', color: '#4aa8ff', align: 'center', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).ui(20);
+  s.z = T(s, 686, 31, '', { ...AB, fontSize: '26px', color: '#4aa8ff', align: 'center', stroke: '#050d20', strokeThickness: 4 }).ui(20);
   [s.M, s.V, s.D, s.hud, s.Q, s.U, s.E, s.z].forEach(item => item.setVisible(false));
   s.q = s.add.graphics().ui(19);
   s.q.fillStyle(C.ink, .92).fillRect(60, 548, 680, 40);
   s.q.lineStyle(1, C.cream, .38).strokeRect(60, 548, 680, 40);
-  s.W = s.add.text(W / 2, 568, '', { ...MO, fontSize: '15px', color: '#f7f9ff', align: 'center' }).setOrigin(.5).ui(20);
-  s.K = s.add.text(W / 2, 492, 'PRESS START', { ...AB, fontSize: '24px', color: '#ffc857', stroke: '#050d20', strokeThickness: 6 }).setOrigin(.5).ui(20);
-  s.u = s.add.text(W / 2, 70, 'OYE PLATANUS, ¿NOS VEMOS?', { ...AB, fontSize: '30px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 7 }).setOrigin(.5).ui(20);
-  s.B = s.add.text(W / 2, 105, 'PLATANUS HACK 26  /  CHILE', { ...MO, fontSize: '12px', color: '#ffffff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).ui(20);
+  s.W = T(s, W / 2, 568, '', { ...MO, fontSize: '15px', color: '#f7f9ff', align: 'center' }).ui(20);
+  s.K = T(s, W / 2, 492, 'PRESS START', { ...AB, fontSize: '24px', color: '#ffc857', stroke: '#050d20', strokeThickness: 6 }).ui(20);
+  s.u = T(s, W / 2, 70, 'OYE PLATANUS, ¿NOS VEMOS?', { ...AB, fontSize: '30px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 7 }).ui(20);
+  s.B = T(s, W / 2, 105, 'PLATANUS HACK 26  /  CHILE', { ...MO, fontSize: '12px', color: '#ffffff', stroke: '#050d20', strokeThickness: 4 }).ui(20);
   const mono = { ...MO, fontSize: '14px', color: '#f7f9ff', lineSpacing: 6 }, big = { ...AB, color: '#f7f9ff', stroke: '#050d20', strokeThickness: 5, align: 'center' };
-  s.best = s.add.text(W / 2, 530, '', { ...mono, color: '#8fd0ff' }).setOrigin(.5).ui(20);
-  s.credit = s.add.text(W / 2, 565, 'CREATED BY ARAMIS2009', { ...mono, fontSize: '12px', color: '#c5d9f2' }).setOrigin(.5).ui(20);
+  s.best = T(s, W / 2, 530, '', { ...mono, color: '#8fd0ff' }).ui(20);
+  s.credit = T(s, W / 2, 565, 'CREATED BY ARAMIS2009', { ...mono, fontSize: '12px', color: '#c5d9f2' }).ui(20);
   s.w = s.add.graphics().ui(35);
   s.sel = [
-    s.add.text(W / 2, 64, 'CHOOSE YOUR MODE', { ...big, fontSize: '32px' }).setOrigin(.5),
-    s.add.text(265, 286, '1 PLAYER\nYOU VS CPU', { ...big, fontSize: '22px' }).setOrigin(.5),
-    s.add.text(535, 286, '2 PLAYERS\nP1 VS P2', { ...big, fontSize: '22px' }).setOrigin(.5),
-    s.add.text(W / 2, 550, '<  >  CHOOSE     START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }).setOrigin(.5),
-    s.add.text(W / 2, 518, 'P2 CAN ALSO JOIN A SOLO MATCH BY MOVING', { ...mono, fontSize: '11px', color: '#c5d9f2' }).setOrigin(.5)
+    T(s, W / 2, 64, 'CHOOSE YOUR MODE', { ...big, fontSize: '32px' }),
+    T(s, 265, 286, '1 PLAYER\nYOU VS CPU', { ...big, fontSize: '22px' }),
+    T(s, 535, 286, '2 PLAYERS\nP1 VS P2', { ...big, fontSize: '22px' }),
+    T(s, W / 2, 550, '<  >  CHOOSE     START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }),
+    T(s, W / 2, 518, 'P2 CAN ALSO JOIN A SOLO MATCH BY MOVING', { ...mono, fontSize: '11px', color: '#c5d9f2' })
   ];
   s.sel.forEach(t => t.ui(36).setVisible(false));
   s.tm = [
@@ -120,22 +122,21 @@ function create() {
   s.ball = 0;
   s.bl = BALLS.map((b, i) => s.add.text(184 + i * 144, 340, b[0].replace(' ', '\n'), { ...big, fontSize: '16px' }).setOrigin(.5, 0).ui(36).setVisible(false));
   s.bp = BALLS.map((b, i) => makeBanana(s, 184 + i * 144, 255, 2, i).ui(37).setVisible(false));
-  // How-to-play page: gold labels on the left, one line of advice per row on the right.
-  const row = { ...mono, fontSize: '15px', lineSpacing: 31 };
-  s.hw = [
-    s.add.text(W / 2, 64, 'HOW TO PLAY', { ...big, fontSize: '32px' }).setOrigin(.5),
-    s.add.text(120, 140, 'RUN\nPASS\nDODGE\nDEFEND\nWIN\nP2', { ...row, color: '#ffc857' }),
-    s.add.text(206, 140, 'MOVE WITH WASD · REACH THE END ZONE FOR 6 POINTS\nU SHORT · O LONG · AIM WITH WASD AT THE GREEN RING\nI JUKE · L JUMP · K PUSH THE NEAREST DEFENDER\nTOUCH THE RUNNER TO TACKLE · I DIVE · K DROP A PEEL\nFIRST TO 21 · 4 DOWNS TO GAIN 10 YARDS\nARROWS MOVE · R/Y PASS · T JUKE · H JUMP · G PUSH', row),
-    s.add.text(W / 2, 550, 'START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }).setOrigin(.5)
-  ];
-  s.hw.forEach(t => t.ui(36).setVisible(false));
   s.q.setVisible(false); s.W.setVisible(false);
+  // Coach card: a big panel in the stands area so it never covers the pitch.
+  s.tg = s.add.graphics().ui(40).setVisible(false);
+  s.tg.fillStyle(C.ink, .92).fillRoundedRect(90, 96, 620, 150, 14).lineStyle(3, C.gold, .8).strokeRoundedRect(90, 96, 620, 150, 14);
+  s.tt = T(s, W / 2, 140, '', { ...AB, fontSize: '24px', color: '#f7f9ff', align: 'center', stroke: '#050d20', strokeThickness: 5 }).ui(41).setVisible(false);
+  s.gm = s.add.graphics().ui(41);
+  s.tk = T(s, W / 2, 212, '', { ...AB, fontSize: '26px', color: '#ffc857' }).ui(41).setVisible(false);
 }
 
 function update(time, delta) {
   const s = this, dt = Math.min(delta, 40), start = s.b.pressed.START1 || s.b.pressed.START2;
   // START2 picks the 1v1 mode wherever a match can begin; on the mode screen it only confirms a choice.
   if (start && (s.c === 'title' || s.c === 'over')) s.o = !!s.b.pressed.START2;
+  // Short action callouts sit near the top so a busy play stays visible; full-screen messages keep the centre.
+  s.h?.setY(s.m ? 120 : H / 2);
   if (s.c === 'title') {
     s.K.setAlpha(.68 + sin(time / 300) * .3);
     introMatch(s, time);
@@ -150,8 +151,6 @@ function update(time, delta) {
     updateTeams(s, time);
   } else if (s.c === 'balls') {
     updateBalls(s, time);
-  } else if (s.c === 'howto') {
-    updateHow(s, time);
   } else if (s.c === 'initials') {
     updateInitials(s);
   } else if (s.c === 'playing') {
@@ -159,14 +158,15 @@ function update(time, delta) {
     else playFrame(s, time, dt);
   } else if (s.c === 'tackled') {
     if (time >= s.ab) finishPlay(s, s.aq, time, 'TACKLED!');
+  } else if (s.c === 'aim') {
+    updateAim(s, time);
   } else if (s.c === 'kicking') {
     updateFieldGoal(s, time, dt);
-  } else if (s.c === 'penalty') {
-    updatePenalty(s, time);
   } else if (s.c === 'loose') {
     updateLooseBall(s, time);
   } else if (s.c === 'countdown') {
-    updateCountdown(s, time);
+    // The card freezes the countdown too, so the clock is pushed back while it is open.
+    if (coach(s, time)) s.countEnd += dt; else updateCountdown(s, time);
   } else if (s.c === 'spotting') {
     if (time >= s.N) beginCountdown(s, time);
   } else if (s.c === 'celebrating') {
@@ -177,7 +177,7 @@ function update(time, delta) {
   if (s.d[0].length) {
     renderWorld(s, time); drawAim(s, time);
     // The help bar would cover the play, so in a match it only shows before the snap and while paused.
-    const help = s.c === 'countdown' || s.c === 'paused' || s.c === 'penalty';
+    const help = s.c === 'countdown' || s.c === 'paused';
     s.q.setVisible(help); s.W.setVisible(help);
   }
   playMusic(s);
@@ -187,10 +187,10 @@ function update(time, delta) {
 }
 
 function startMatch(s, time) {
-  s.P = [0, 0]; s.a = 0; s.g = null; s.kick = null; s.H = null; s.duo = !!s.o; s.c = 'countdown'; s.e = time + 1700; s.A = 1; s.j = WORLD / 2;
+  s.P = [0, 0]; s.a = 0; s.g = null; s.kick = null; s.duo = !!s.o; s.c = 'countdown'; s.e = time + 1700; s.A = 1; s.j = WORLD / 2;
   s.J = null; s.l = false; s.snap = false; s.cd = [0, 0];
   [s.M, s.V, s.D, s.hud, s.Q, s.U, s.E, s.z].forEach(item => item.setVisible(true));
-  [s.w, ...s.sel, ...s.tm, ...s.bl, ...s.bp, ...s.hw, s.C, s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit].forEach(o => o.setVisible(false));
+  show(s, '');
   s.T = s.p.map(i => TEAMS[i]);
   s.M.clear(); drawHudPlate(s.M, s.T[0][2], s.T[1][2]);
   const hk = s.T[0][6];
@@ -205,48 +205,39 @@ function startMatch(s, time) {
     if (m.style?.fontSize === '34px') m.setColor(hk ? '#eeff00' : '#ffffff');
   });
   s.h?.destroy();
-  s.h = s.add.text(W / 2, H / 2, '', { ...MO, fontSize: '30px', color: '#8fd0ff', align: 'center', stroke: '#0b1b3a', strokeThickness: 8 }).setOrigin(.5).ui(30);
+  s.h = T(s, W / 2, H / 2, '', { ...MO, fontSize: '30px', color: '#8fd0ff', align: 'center', stroke: '#0b1b3a', strokeThickness: 8 }).ui(30);
   startStadiumAudio(s);
   makeTeams(s, 0, s.j); updateHud(s);
   beginCountdown(s, time);
 }
 
+// Every menu object is listed once and each screen is the subset of it that is visible ('' hides all of them for the match).
+function show(s, name) {
+  const bowl = [s.C, s.w], title = [s.C, s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit];
+  const on = { title, select: [...bowl, ...s.sel], teams: [...bowl, ...s.tm], balls: [...bowl, s.tm[0], s.tm[6], ...s.bl, ...s.bp] }[name] || [];
+  [s.w, ...title, ...s.sel, ...s.tm, ...s.bl, ...s.bp].forEach(o => o.setVisible(on.includes(o)));
+}
+
 function showTitle(s) {
-  s.c = 'title';
-  [s.w, ...s.sel].forEach(o => o.setVisible(false));
-  [s.C, s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit].forEach(o => o.setVisible(true));
+  s.c = 'title'; show(s, 'title');
 }
 
 function showTeams(s) {
   s.c = 'teams'; s.t = [0, !s.o];
-  [...s.sel, ...s.bl, ...s.bp].forEach(o => o.setVisible(false)); s.tm.forEach(o => o.setVisible(true)); s.tm[8].setVisible(!!s.o); s.tm[0].setText('CHOOSE YOUR TEAM');
+  show(s, 'teams'); s.tm[8].setVisible(!!s.o); s.tm[0].setText('CHOOSE YOUR TEAM');
 }
 
 // The ball is shared by both sides; either player can browse and lock it, and back returns to the team screen.
 function showBalls(s) {
   s.c = 'balls';
-  s.tm.forEach(o => o.setVisible(false)); [s.tm[0], s.tm[6], ...s.bl, ...s.bp].forEach(o => o.setVisible(true)); s.tm[0].setText('CHOOSE YOUR BALL');
-}
-
-// The page sits between the ball screen and the kickoff; START skips it. Rematches after a game over go straight to the field.
-function showHow(s) {
-  s.c = 'howto';
-  [s.tm[0], s.tm[6], ...s.bl, ...s.bp].forEach(o => o.setVisible(false)); s.hw.forEach(o => o.setVisible(true));
-}
-
-function updateHow(s, time) {
-  const p = s.b.pressed;
-  if (p.P1_2 || p.P2_2) { s.hw.forEach(o => o.setVisible(false)); return showBalls(s); }
-  if (p.P1_1 || p.P2_1 || p.START1 || p.START2) return startMatch(s, time);
-  s.w.clear().fillStyle(0x050d20, .92).fillRoundedRect(100, 112, 600, 330, 16).lineStyle(2, C.gold, .6).strokeRoundedRect(100, 112, 600, 330, 16);
-  s.hw[3].setAlpha(.7 + sin(time / 250) * .3);
+  show(s, 'balls'); s.tm[0].setText('CHOOSE YOUR BALL');
 }
 
 function updateBalls(s, time) {
   const p = s.b.pressed;
   if (p.P1_2 || p.P2_2) return showTeams(s);
   s.ball = (s.ball + (p.P1_R || p.P2_R ? 1 : 0) + (p.P1_L || p.P2_L ? 3 : 0)) % 4;
-  if (p.P1_1 || p.P2_1 || p.START1 || p.START2) return showHow(s);
+  if (p.P1_1 || p.P2_1 || p.START1 || p.START2) return startMatch(s, time);
   const g = s.w.clear();
   BALLS.forEach((b, i) => {
     const on = i === s.ball, x = 119 + i * 144, pop = on ? 3 + sin(time / 150) * 3 : 0;
@@ -288,9 +279,7 @@ function updateTeams(s, time) {
 
 function showSelect(s) {
   startStadiumAudio(s);
-  s.c = 'select';
-  [s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit, ...s.tm].forEach(o => o.setVisible(false));
-  [s.C, s.w, ...s.sel].forEach(o => o.setVisible(true));
+  s.c = 'select'; show(s, 'select');
 }
 
 // Mode cards are redrawn every frame so the selected one can pulse; the P2 controls dim in solo mode.
@@ -363,7 +352,7 @@ function special(s, p, team, time) {
   if (dist(d) > 70) return playCue(s, 'WHIFF!', '#8fd0ff', time, 400);
   d.af = d.ac = time + 1300; d.x += Math.sign(d.x - p.x || 1) * 45;
   s.tweens.add({ targets: d, fall: 1, duration: 140, yoyo: true, hold: 1000 });
-  playCue(s, 'STIFF ARM!', '#8fd0ff', time, 600); thud(s, 150, .2, .9); impactBurst(s, d.x, d.y, C.gold, 10); s.cameras.main.shake(100, .005);
+  playCue(s, 'STIFF ARM!', '#8fd0ff', time, 600); thud(s, 150, .2, .9); impactBurst(s, d.x, d.y, C.gold, 10); s.cameras.main.shake(80, .003);
 }
 
 function showOver(s) {
@@ -451,9 +440,9 @@ function createPlayer(s, team, au, x, y) {
   const aw = [grp(legL), grp(legR)]; grp(body); aw.push(grp(armL, -11, 17), grp(armR, 11, 17)); grp(head);
   // Facing the camera shows the face; facing away shows the back of the head.
   const napeG = grp(nape), faceG = grp(face);
-  root.add(s.add.text(0, -47, String([12, 24, 55, 87][au]), { ...AB, fontSize: '13px', color: '#f7f9ff', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5));
-  const am = s.add.text(0, 0, '', { ...MO, fontSize: '10px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
-  const ao = s.add.text(0, 0, team === 0 ? 'P1' : 'P2', { ...AB, fontSize: '16px', color: team ? '#ff5a4a' : '#4aa8ff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
+  root.add(T(s, 0, -47, String([12, 24, 55, 87][au]), { ...AB, fontSize: '13px', color: '#f7f9ff', stroke: '#0b1b3a', strokeThickness: 3 }));
+  const am = T(s, 0, 0, '', { ...MO, fontSize: '10px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 4 }).setDepth(10);
+  const ao = T(s, 0, 0, team === 0 ? 'P1' : 'P2', { ...AB, fontSize: '16px', color: team ? '#ff5a4a' : '#4aa8ff', stroke: '#050d20', strokeThickness: 4 }).setDepth(11).setVisible(false);
   const av = makeBanana(s, 17, -36, .5); root.add(av); av.setRotation(.6).setVisible(false);
   const arrow = s.add.triangle(0, -126, 0, 0, 22, 0, 11, 16, pc).setStrokeStyle(2, C.cream); root.add(arrow);
   return { root, aw, face: [faceG], nape: napeG, marks: [ring, arrow], av, am, ao, ap, team, au, ar: au, x, y, aa: 0, ab: 0 };
@@ -463,9 +452,19 @@ function playFrame(s, time, dt) {
   const p2Input = ['P2_U', 'P2_D', 'P2_L', 'P2_R', 'P2_1', 'P2_2', 'P2_3', 'P2_6'].some(k => held(s, k) || s.b.pressed[k]);
   // P2 can still drop in mid-match; once in, their player stops being AI-driven even while idle.
   if (p2Input) s.duo = true;
+  // Difficulty level 0 to 3 (1 when level on points): the CPU hardens as the human leads and relaxes when it trails.
+  s.lv = s.duo ? 0 : clp(1 + (s.P[0] - s.P[1]) / 6, 0, 3);
   const carrier = s.d[s.a][0], attack = s.a === 0 ? 1 : -1;
   const ballTarget = s.x || carrier;
   const [human0, human1] = humans(s, carrier);
+  // On defense the first button hops to the next-closest teammate; the others stay on CPU. The pick is held for 1.5 s so the
+  // auto-switch to whoever is nearest does not snatch it straight back.
+  s.lk -= dt;
+  for (const t of [0, 1]) if (t !== s.a && (t ? s.duo : 1) && s.b.pressed[(t ? 'P2_' : 'P1_') + 1]) {
+    const rank = s.d[t].slice(1).sort((m, n) => dst(m.x, m.y, carrier.x, carrier.y) - dst(n.x, n.y, carrier.x, carrier.y));
+    s.ctrl[t] = rank[(rank.indexOf(s.ctrl[t]) + 1) % rank.length]; s.lk = 1500;
+    impactBurst(s, s.ctrl[t].x, s.ctrl[t].y, C.cream, 6, 1);
+  }
   const controlled = s.duo ? [human0, human1] : [human0];
   const controlledSet = new Set(controlled); s.aim = null;
   for (let team = 0; team < 2; team++) {
@@ -480,7 +479,6 @@ function playFrame(s, time, dt) {
         vx = ((held(s, pre + 'U') ? 1 : 0) - (held(s, pre + 'D') ? 1 : 0)) * s.s;
         vy = ((held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0)) * s.s;
         if (p === carrier && !s.g) s.aim = [p, passTarget(s, p, vx, vy)[0]];
-        if (p === carrier && !s.g && s.b.pressed[pre + '4'] && attemptFieldGoal(s, p, time)) return;
         if (p === carrier && !s.g && s.b.pressed[pre + '6'] && time > (p.ak || 0)) { p.ai = time; p.aj = time + 620; p.ak = time + 1350; p.al = false; }
         if (p === carrier && !s.g && (s.b.pressed[pre + '1'] || s.b.pressed[pre + '3'])) {
           throwBanana(s, p, vx, vy, time, s.b.pressed[pre + '3']);
@@ -510,12 +508,14 @@ function playFrame(s, time, dt) {
         vy = clp((targetY - p.y) / 85, -1, 1);
       }
       if (time < (p.af || 0)) vx = vy = 0;
+      // Every runner is scaled by the same factor so the tuned CPU-vs-human balance holds while play feels less frantic.
       const mag = Math.hypot(vx, vy) || 1;
+      p.mx = vx / mag; p.my = vy / mag;
       const dashing = time < p.aa || time < p.ab;
       const chaseGap = team !== s.a ? dst(p.x, p.y, carrier.x, carrier.y) : 0, hd = s.duo || team === 1;
-      const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.a ? (p.ar === 1 || p.ar === 2 ? 205 : 178) : (chaseGap > 160 ? 218 + 8 * hd : 188 + 18 * hd) + (hd && !s.duo ? Math.min(s.P[0] / 6, 3) * 7 : 0);
-      p.x = clp(p.x + vx / mag * speed * dt / 1000, 24, WORLD - 24);
-      p.y = clp(p.y + vy / mag * speed * dt / 1000, TOP + 30, BOTTOM - 27);
+      const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.a ? (p.ar === 1 || p.ar === 2 ? 205 : 178) + (team && !s.duo ? 7 * s.lv : 0) : (chaseGap > 160 ? 218 + 8 * hd : 188 + 18 * hd) + (hd && !s.duo ? 7 * s.lv : 0);
+      p.x = clp(p.x + vx / mag * speed * dt * .86 / 1000, 24, WORLD - 24);
+      p.y = clp(p.y + vy / mag * speed * dt * .86 / 1000, TOP + 30, BOTTOM - 27);
       p.hop = time < (p.aj || 0) ? sin((time - p.ai) / (p.aj - p.ai) * Math.PI) * 2 : 0;
       p.ax = Math.hypot(vx, vy) > .15; p.lean = p.ax ? vy / mag * s.s : 0;
       p.av.setVisible(p === carrier && !s.g && !s.x);
@@ -535,7 +535,10 @@ function playFrame(s, time, dt) {
     for (const defender of s.d[1 - s.a]) {
       const distance = dst(current.x, current.y, defender.x, defender.y);
       const hd = s.a === 0 || s.duo;
-      if (distance < (hd ? 28 : 25) && time > (defender.ac || 0)) {
+      // A defender you steer only tackles while its dive is active; the CPU and your AI teammates still tackle on touch.
+      const manual = controlledSet.has(defender);
+      if (manual && !(time < defender.ab)) continue;
+      if (distance < (manual ? 38 : hd ? 28 : 25) && time > (defender.ac || 0)) {
         if (time < (current.aj || 0)) { if (!current.al) { current.al = true; current.x = clp(current.x + attack * 24, END + 28, WORLD - END - 28); playCue(s, 'HURDLE!', '#ffc857', time, 500); impactBurst(s, current.x, current.y, C.gold, 10, 1); } break; }
         if (!controlledSet.has(current) && time > s.cd[s.a] && rand() < .3) { special(s, current, s.a, time); break; }
         defender.ac = time + 850;
@@ -555,7 +558,7 @@ function playFrame(s, time, dt) {
           playCue(s, 'FUMBLE!', '#ef6a60', time, 750); s.cameras.main.flash(180, 213, 43, 30); thud(s, 90, .3, .9); return;
         }
         // The dead-ball pause doubles as hit-stop: the world freezes while both players go down.
-        s.cameras.main.shake(160, .009); thud(s, 110, .28, 1);
+        s.cameras.main.shake(120, .003); thud(s, 110, .28, 1);
         startTackleFall(s, current, defender, time);
         impactBurst(s, current.x, current.y, [C.grass, C.cream, 0x2f8a4c], 14, 1);
         s.c = 'tackled'; s.ab = time + 650; s.aq = current.x; return;
@@ -575,7 +578,6 @@ function playFrame(s, time, dt) {
 function startTackleFall(s, carrier, tackler, time) {
   s.G = { carrier, tackler, start: time };
   carrier.af = tackler.af = time + 650;
-  s.tweens.add({ targets: s.cameras.main, zoom: 1.16, duration: 120, yoyo: true, hold: 220, ease: 'Quad.Out' });
 }
 
 function roleName(ar, offense) {
@@ -617,7 +619,8 @@ function defenseTarget(s, p, carrier, attack, time) {
     }
   }
   if (p.ar === 3) return [carrier.x + attack * 10, carrier.y];
-  return [carrier.x + attack * 46, clp(carrier.y + (p.y < carrier.y ? -24 : 24), TOP + 35, BOTTOM - 35)];
+  // Pursuit angle: aim a little ahead of where the runner is heading instead of at where he is, so chasers cut him off.
+  return [carrier.x + attack * 46 + (carrier.mx || 0) * 55, clp(carrier.y + (p.y < carrier.y ? -24 : 24) + (carrier.my || 0) * 55, TOP + 35, BOTTOM - 35)];
 }
 
 function cpuCarryIntent(s, carrier, attack, time) {
@@ -640,6 +643,10 @@ function cpuCarryIntent(s, carrier, attack, time) {
   if (call && !receiver && (nearest.distance < 105 || t > 2300)) s.call = call = 0;
   s.dropping = call;
   if (!call && nearest.distance < 225) receiver = findOpenReceiver(s, carrier, attack);
+  if (nearest.distance < 70) {
+    receiver = null;
+    if (time > (carrier.jk || 0)) { carrier.aa = time + 320; carrier.jk = time + 1500; }
+  }
   let vx = attack, vy = clp((targetY - carrier.y) / 55, -1, 1);
   if (call === 1) vx = t < 700 ? -attack : 0;
   // The roll-out drifts back while heading for a sideline, then the passer sets his feet.
@@ -715,7 +722,7 @@ function updatePass(s, dt, time) {
   }
   const defenders = s.d[1 - s.a];
   for (const d of defenders) {
-    if (dst(d.x, d.y - 10, f.x, f.y) < 25) {
+    if (dst(d.x, d.y - 10, f.x, f.y) < (s.a && !s.duo ? 20 - 2 * s.lv : 25)) {
       f.visual.destroy(); f.shadow.destroy(); s.g = null; setPossession(s, 1 - s.a, d); s.A = 1; s.j = f.x; s.e = time + 1400;
       playCue(s, 'INTERCEPTED!', '#ef6a60', time, 900); impactBurst(s, d.x, d.y, C.red, 12); s.cameras.main.flash(180, 213, 43, 30); thud(s, 90, .3, .9); return;
     }
@@ -783,6 +790,10 @@ function setPossession(s, team, player) {
 function finishPlay(s, spot, time, result) {
   const attack = s.a === 0 ? 1 : -1;
   spot = clp(spot, END + 20, WORLD - END - 20);
+  // Tackled inside the 20-yard zone: the offense kicks at the goal instead of running another down.
+  if (result === 'TACKLED!' && fieldGoalDistance(s, spot) <= 20) {
+    s.g = null; attemptFieldGoal(s, s.d[s.a][0], spot, time); return;
+  }
   const gained = (spot - s.j) * attack;
   const firstDown = gained >= 154;
   const turnover = !firstDown && s.A >= 4;
@@ -795,7 +806,7 @@ function finishPlay(s, spot, time, result) {
   if (turnover) call = 'TURNOVER ON DOWNS!';
   else if (firstDown) call = 'FIRST DOWN!';
   updateHud(s);
-  playCue(s, `${call}\n${s.z.text}`, turnover ? '#ef6a60' : '#8fd0ff', time, 1300);
+  playCue(s, `${call}\n${s.z.text} · ${s.U.text}`, turnover ? '#ef6a60' : '#8fd0ff', time, 1300);
   s.h.setFontSize('34px').setScale(.7);
   s.tweens.add({ targets: s.h, scaleX: 1, scaleY: 1, duration: 200, ease: 'Back.Out' });
   s.c = 'spotting'; s.N = time + 1300; s.snap = true;
@@ -805,64 +816,45 @@ function fieldGoalDistance(s, x) {
   return (s.a === 0 ? WORLD - END - x : x - END) / 15.4;
 }
 
-function attemptFieldGoal(s, kicker, time) {
-  const foul = s.H;
-  if (!foul || foul.team !== s.a || time > foul.until) {
-    playCue(s, 'FIELD GOAL ONLY AFTER A FOUL', '#ef6a60', time, 850);
-    return false;
+function attemptFieldGoal(s, kicker, spot, time) {
+  // The CPU kicks with a random miss (it scores a bit under half of its kicks); a human gets the timing bar, whose rule is written on the card before the bar moves.
+  if (s.a && !s.duo) { launchKick(s, kicker, spot, rbt(-110, 110)); return; }
+  s.fa = { k: kicker, f: spot, t: time + 1500 }; s.c = 'aim';
+  s.tt.setText('KICK AT THE GOAL!\nSTOP THE BAR IN THE GREEN');
+  s.tk.setText(s.a ? '[R] KICK' : '[U] KICK');
+  [s.tg, s.tt, s.tk].forEach(o => o.setVisible(true));
+}
+
+// The bar swings side to side; the miss grows with the distance from the green zone, so an early press is a coin flip, not a sure miss.
+function updateAim(s, time) {
+  const a = s.fa, pos = time > a.t ? sin((time - a.t) / 230) * 150 : -150;
+  // Once the bar starts moving the rule card goes away and only the bar stays, so nothing hides the pitch.
+  if (time > a.t) [s.tg, s.tt, s.tk].forEach(o => o.setVisible(false));
+  s.gm.clear().fillStyle(0xf7f9ff).fillRect(247, 175, 306, 24).fillStyle(0x16304f).fillRect(250, 178, 300, 18).fillStyle(0x35c759).fillRect(375, 178, 50, 18).fillStyle(0xffffff).fillRect(397 + pos, 172, 6, 30);
+  if (time > a.t && s.b.pressed[(s.a ? 'P2_' : 'P1_') + 1] || time > a.t + 5000) {
+    s.gm.clear();
+    launchKick(s, a.k, a.f, pos);
   }
-  const yards = fieldGoalDistance(s, foul.spot);
-  if (yards < 10 || yards > 20) {
-    playCue(s, 'FIELD GOAL RANGE: 10-20 YDS', '#ef6a60', time, 850);
-    return false;
-  }
+}
+
+function launchKick(s, kicker, spot, offset) {
   const team = s.a, goalX = team === 0 ? WORLD - END : END;
   const [sx, sy] = proj(s, kicker.x, kicker.y);
-  const wind = rbt(-12, 12), error = kicker.y - (TOP + BOTTOM) / 2 + wind;
+  const error = offset * .45 + rbt(-10, 10);
   const visual = makeBanana(s, sx, sy - 14, .9).setDepth(13).setRotation(1.1);
   const shadow = s.add.ellipse(sx, sy, 28, 8, C.black, .38).setDepth(12);
   visual.cameraFilter = s.ui.id; shadow.cameraFilter = s.ui.id;
-  s.kick = { team, spot: foul.spot, fromX: kicker.x, fromY: kicker.y, goalX, error, elapsed: 0, duration: 900, good: abs(error) <= 22, visual, shadow };
-  s.H = null;
+  s.kick = { team, spot, fromX: kicker.x, fromY: kicker.y, goalX, error, elapsed: 0, duration: 900, good: abs(error) <= 22, visual, shadow };
   kicker.av.setVisible(false); s.c = 'kicking'; s.m = 0;
   s.h.setText('FIELD GOAL!').setColor('#f7f9ff').setFontSize('30px').setAlpha(1);
   playCrowd(s, .9, 1.5);
-  return true;
 }
 
 function callDefensiveFoul(s, carrier, time) {
-  const yards = fieldGoalDistance(s, carrier.x);
-  if (yards >= 10 && yards <= 20) {
-    s.H = { team: s.a, spot: carrier.x, until: time + 5000 };
-    s.penaltyUntil = time + 5000; s.R = time + 650; s.c = 'penalty';
-    s.h.setText('PENALTY!').setColor('#f7f9ff').setFontSize('30px').setAlpha(1);
-    s.W.setText('FG ONLY AFTER FOUL AT 10-20 YDS   J / F KICK   ENTER: PLAY ON');
-    playCrowd(s, .8, 1.2);
-    return;
-  }
   const attack = s.a === 0 ? 1 : -1;
   carrier.x = clp(carrier.x + attack * 77, END + 28, WORLD - END - 28);
   s.e = time + 700;
   playCue(s, 'DEFENSIVE FOUL! +5 YDS', '#8fd0ff', time, 900);
-}
-
-function updatePenalty(s, time) {
-  const foul = s.H;
-  if (!foul || time >= s.penaltyUntil) {
-    s.H = null; s.c = 'playing'; s.h.setText('');
-    return;
-  }
-  if (foul.team === 1 && !s.duo && time >= s.R) {
-    s.R = time + 1000;
-    if (rbt(1, 100) <= 58) attemptFieldGoal(s, s.d[1][0], time);
-    else { s.H = null; s.c = 'playing'; s.h.setText(''); }
-    return;
-  }
-  const pre = foul.team === 0 ? 'P1_' : 'P2_';
-  if (s.b.pressed[pre + '4']) attemptFieldGoal(s, s.d[foul.team][0], time);
-  else if (s.b.pressed.START1 || s.b.pressed.START2) {
-    s.H = null; s.c = 'playing'; s.h.setText(''); s.e = time + 450;
-  }
 }
 
 function updateFieldGoal(s, time, dt) {
@@ -898,7 +890,7 @@ function humans(s, carrier) {
   return [0, 1].map(t => {
     if (t === s.a) return s.d[t][0];
     const best = nearestPlayer(s.d[t], carrier);
-    if (!s.d[t].includes(s.ctrl[t]) || d(best) + 60 < d(s.ctrl[t])) s.ctrl[t] = best;
+    if (!s.d[t].includes(s.ctrl[t]) || s.lk <= 0 && d(best) + 60 < d(s.ctrl[t])) s.ctrl[t] = best;
     return s.ctrl[t];
   });
 }
@@ -919,7 +911,7 @@ function scoreTouchdown(s, time) {
   s.l = false; playCrowd(s, 1.35, 2.8);
   const emoji = TOUCHDOWN_EMOJIS[rbt(0, TOUCHDOWN_EMOJIS.length - 1)];
   s.h.setText(`${emoji} TOUCHDOWN! ${emoji}\n${['BANANA SPIN', 'ROBOT', 'SPIKE!'][scorer.dance]}`).setFontSize('34px').setColor('#8fd0ff').setAlpha(1).setScale(1);
-  const celebrationEmoji = s.add.text(W / 2, H / 2 - 92, emoji, { fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif', fontSize: '48px' }).setOrigin(.5).ui(29).setScale(.45);
+  const celebrationEmoji = T(s, W / 2, H / 2 - 92, emoji, { fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif', fontSize: '48px' }).ui(29).setScale(.45);
   s.tweens.add({ targets: celebrationEmoji, y: H / 2 - 150, scale: 1.2, alpha: 0, duration: 1250, ease: 'Back.Out', onComplete: () => celebrationEmoji.destroy() });
   scorer.ap.setVisible(true);
   // Confetti in the flag's colours is screen-fixed, so it falls on the HUD camera and ignores the zoom.
@@ -932,7 +924,7 @@ function scoreTouchdown(s, time) {
   s.tweens.add({ targets: scorer, hop: 1, duration: 180, yoyo: true, repeat: 7, ease: 'Sine.InOut' });
   if (scorer.dance > 1) impactBurst(s, scorer.x, scorer.y, [C.gold, C.cream, s.T[s.a][2]], 18, 1);
   s.tweens.add({ targets: scorer.ap, scaleX: 1.3, scaleY: .7, alpha: .7, duration: 240, yoyo: true, repeat: 4 });
-  s.tweens.add({ targets: s.cameras.main, zoom: 1.25, duration: 360, ease: 'Sine.Out', yoyo: true, hold: 1320 });
+  s.tweens.add({ targets: s.cameras.main, zoom: 1.1, duration: 360, ease: 'Sine.Out', yoyo: true, hold: 1320 });
 }
 
 function startStadiumAudio(s) {
@@ -955,10 +947,10 @@ function startStadiumAudio(s) {
   }
 }
 
-// Heroic stadium fanfare, 120 bpm in sixteenth notes over four bars (64 steps), played only in the menus. A letter is a
-// semitone above C4 in base 36 and '-' holds the previous note. Three short calls climb a step each bar (G4 to C5 to E5
-// to G5), then the last bar falls home to C5. Under it: parallel brass, a root-and-fifth bass, timpani, marching snare.
-const MELODY = '7--7-7--c-------c--c-c--g-------g--g-g--j-------j-h-g-e-c-------', ROOTS = [-24, -24, -19, -19, -17, -17, -17, -24], hz = n => 261.63 * 2 ** (n / 12);
+// Original dark trap beat, about 140 bpm in sixteenth notes over four bars (64 steps), played only in the menus. A letter in
+// MELODY is a semitone above C4 in base 36 and '-' holds the previous note (a triumphant brass hook in C minor). ROOTS give the 808 bass
+// note per bar (Cm, Ab, Eb, Bb) and BASS marks the 808 hits inside a bar. Hi-hats roll at the end of every bar.
+const MELODY = '7-----a---c-----8-----c---f-----7-----a---f---h-a-----f-----e-c-', ROOTS = [-24, -28, -21, -26], BASS = 'x-----x---x--x--', hz = n => 261.63 * 2 ** (n / 12);
 
 // One voice scheduled at audio time t: it starts at volume v and decays to v * r (r = .001 gives a plucked or struck sound),
 // optionally sliding down to f2 (the timpani).
@@ -980,23 +972,24 @@ function hit(s, t, d, v, rate) {
 // runs under the game itself. While it is on, about a quarter second is kept scheduled ahead of the audio clock, so frame
 // hiccups never make it stutter; after a long pause the clock is realigned instead of replaying the backlog.
 function playMusic(s) {
-  const c = s.i, on = ['title', 'select', 'teams', 'balls', 'howto'].includes(s.c);
+  const c = s.i, v = ['title', 'select', 'teams', 'balls'].includes(s.c) ? MUSIC_VOL : MUSIC_VOL * .2;
   if (!c || c.state !== 'running') return;
-  if (on !== s.mo) { s.mo = on; s.mu.gain.setTargetAtTime(on ? MUSIC_VOL : 0, c.currentTime, .2); }
-  if (!on) return;
+  // The beat never stops: full volume on the menus, a quiet bed under the match so the crowd and hits stay in front.
+  if (v !== s.mo) { s.mo = v; s.mu.gain.setTargetAtTime(v, c.currentTime, .2); }
   if (!(s.mt > c.currentTime - .5)) s.mt = c.currentTime + .05;
-  for (; s.mt < c.currentTime + .25; s.mt += .125) {
-    const k = s.ms++ % 64, q = k & 15, t = s.mt, m = MELODY[k];
+  for (; s.mt < c.currentTime + .25; s.mt += .107) {
+    const k = s.ms++ % 64, q = k & 15, t = s.mt, m = MELODY[k], r = hz(ROOTS[k >> 4]);
     if (m != '-') {
-      // A held note lasts until the next one starts; the brass swells and sustains instead of plucking.
-      let n = 1; while (MELODY[(k + n) % 64] == '-' && n < 8) n++;
-      const f = parseInt(m, 36), d = n * .12;
-      voice(s, hz(f), t, d, 'square', .3, .6); voice(s, hz(f - 12), t, d, 'sawtooth', .16, .6); voice(s, hz(f - 7), t, d, 'square', .14, .6);
+      let n = 1; while (MELODY[(k + n) % 64] == '-' && n < 12) n++;
+      // Brass: a square and a saw on the note plus a saw an octave down and one a fifth below, held until the next note.
+      const f = parseInt(m, 36), d = n * .105;
+      voice(s, hz(f), t, d, 'square', .2, .7); voice(s, hz(f), t, d, 'sawtooth', .12, .7); voice(s, hz(f - 12), t, d, 'sawtooth', .12, .7); voice(s, hz(f - 7), t, d, 'square', .1, .7);
     }
-    if (q % 4 == 0) voice(s, hz(ROOTS[k >> 3] + (q % 8 ? 7 : 0)), t, .24, 'triangle', .5, .3);
-    if (q % 8 == 0) voice(s, 130, t, .26, 'sine', .9, .001, 40);
-    if (q == 4 || q == 12 || k > 55) hit(s, t, .1, .3 + (k > 55 ? (k - 55) * .04 : 0), 1.2);
-    if (!k) hit(s, t, .9, .35, 2.4);
+    // The 808 is a sine that glides down as it rings out, so it hits hard but stays clean on a small speaker.
+    if (BASS[q] == 'x') voice(s, r, t, .45, 'sine', .95, .01, r * .85);
+    if (q == 8) hit(s, t, .2, .34, 1.4);
+    if (q % 2 == 0 || q > 12) hit(s, t, .03, q % 4 ? .05 : .09, 6);
+    if (!k) hit(s, t, .8, .22, 2.4);
   }
 }
 
@@ -1038,29 +1031,51 @@ function thud(s, f, d, v, at = 0, slide = .35) {
   o.connect(g); g.connect(s.f); o.start(t); o.stop(t + d);
 }
 
+// First solo match only: before the first snap the game stays frozen on six short cards, one key each, so nothing interrupts the play.
+const TIPS = [
+  ['ATTACK\nRUN TO THE GOLD END ZONE', '[W] [A] [S] [D]  MOVE'],
+  ['ATTACK\nPASS TO THE GREEN RING', '[U] SHORT    [O] LONG PASS'],
+  ['ATTACK\nDODGE THE RIVALS', '[I] DODGE  [L] JUMP  [K] PUSH'],
+  ['DEFENSE\nCATCH THE RUNNER AND TACKLE', '[I] TACKLE    [K] BANANA PEEL'],
+  ['DEFENSE\nCHANGE THE PLAYER YOU CONTROL', '[U] SWITCH PLAYER'],
+  ['4 TRIES TO REACH THE BLUE LINE\nFIRST TO 21 POINTS WINS', '[U] LET\'S PLAY!']
+];
+// Returns true while a card freezes the countdown; each press moves to the next card.
+function coach(s, time) {
+  let i = s.tu | 0;
+  if (s.duo || i > 5) return false;
+  const k = s.b.pressed, show = n => { s.tt.setText(TIPS[n][0]); s.tk.setText(`${TIPS[n][1]}   ${n + 1}/6`); };
+  if (!s.tp) { s.tp = 1; show(i); [s.tg, s.tt, s.tk].forEach(o => o.setVisible(true)); }
+  else if ([['U', 'D', 'L', 'R'].some(d => held(s, 'P1_' + d)), k.P1_1 || k.P1_3, k.P1_2 || k.P1_5 || k.P1_6, k.P1_2 || k.P1_5, k.P1_1, k.P1_1][i]) {
+    s.tu = ++i;
+    if (i > 5) { [s.tg, s.tt, s.tk].forEach(o => o.setVisible(false)); return false; }
+    show(i);
+  }
+  s.tk.setAlpha(.6 + sin(time / 150) * .4);
+  return true;
+}
+
 function updateHud(s) {
   const carrier = s.d[s.a][0], dir = s.a === 0 ? 1 : -1;
   const toGo = Math.max(1, Math.ceil((154 - (carrier.x - s.j) * dir) / 15.4));
   // Once the first-down line sits past the goal line, football calls it "& GOAL".
   const goal = (s.j + 154 * dir - (dir > 0 ? WORLD - END : END)) * dir >= 0;
-  const downName = ['1ST', '2ND', '3RD', '4TH'][s.A - 1];
-  const mode = s.duo ? 'P1 VS P2' : 'P1 VS CPU';
   s.V.setText(s.T[0][1]); s.D.setText(s.T[1][1]);
   s.hud.setText(`${s.P[0]} - ${s.P[1]}`);
-  s.U.setText(mode);
-  s.z.setText(`${downName} & ${goal ? 'GOAL' : toGo}`);
+  s.U.setText(`${goal ? 'GOAL' : toGo + ' YDS'} TO GO`);
+  s.z.setText(`TRY ${s.A}/4`);
   s.Q.clear().fillStyle(C.gold).fillRect(s.a ? 200 : 24, 64, 68, 5);
-  if (!s.duo && s.a === 1) s.W.setText('DEFENSE: CATCH THE RUNNER  ·  I TACKLE  ·  K DROP A PEEL');
-  else if (!s.duo) s.W.setText('OFFENSE: RUN TO THE END ZONE  ·  U PASS  ·  I JUKE  ·  K PUSH');
-  else if (s.a === 0) s.W.setText('P1 ATTACKS: U PASS · K PUSH   P2 DEFENDS: T TACKLE · G PEEL');
-  else s.W.setText('P2 ATTACKS: R PASS · G PUSH   P1 DEFENDS: I TACKLE · K PEEL');
+  if (!s.duo && s.a === 1) s.W.setText('DEFENSE: I TACKLE · U SWITCH PLAYER · K PEEL');
+  else if (!s.duo) s.W.setText('OFFENSE: RUN TO THE GOLD END ZONE · U PASS · I DODGE');
+  else if (s.a === 0) s.W.setText('P1 ATTACKS: U PASS · K PUSH   P2 DEFENDS: T TACKLE · R SWITCH');
+  else s.W.setText('P2 ATTACKS: R PASS · G PUSH   P1 DEFENDS: I TACKLE · U SWITCH');
 }
 
 // Chase-camera projection. Field x is depth and `l` is the lateral ar in field pixels.
 // Returns [screenX, screenY, scale]; the camera never rolls, so equal depths share one screen row.
 function pv(s, u, m) {
   const k = FOC / Math.max(u - s.cx + BACK, 40);
-  return [W / 2 + (m - s.cl) * k, HZ + CAMH * k, k];
+  return [W / 2 + (m - s.cl) * k, HZ + s.ch * k, k];
 }
 // The camera always sits behind the attacking team, so team 1's view is the field rotated 180 degrees.
 function pj(s, x, l) { return s.s > 0 ? pv(s, x, l) : pv(s, WORLD - x, W - l); }
@@ -1072,7 +1087,7 @@ function makeFieldMarks(s) {
   const tag0 = m => (m.hk = 0, m);
   const paint = { ...AB, fontSize: '34px', color: '#ffffff', stroke: '#174b2c', strokeThickness: 5 };
   const mono = { ...MO, fontSize: '9px', color: '#9acaff', stroke: '#0b1b3a', strokeThickness: 3 };
-  s.ez = [END / 2, WORLD - END / 2].map(x => tag0(addFieldMark(s, s.add.text(0, 0, 'PLATANUS HACK 26', { ...paint, fontSize: '40px', stroke: '#07132b', strokeThickness: 6 }).setOrigin(.5), x, W / 2)));
+  s.ez = [END / 2, WORLD - END / 2].map(x => tag0(addFieldMark(s, T(s, 0, 0, 'PLATANUS HACK 26', { ...paint, fontSize: '40px', stroke: '#07132b', strokeThickness: 6 }), x, W / 2)));
   for (let n = 10; n < YD; n += 10) {
     // Painted just beyond their line so the stripe does not cut through the digits.
     for (const l of [112, W - 112]) addFieldMark(s, s.add.text(0, 0, String(Math.min(n, YD - n)), paint).setOrigin(.5, 1.2).setAlpha(.94), END + n * 15.4, l);
@@ -1081,13 +1096,13 @@ function makeFieldMarks(s) {
   let row = 0;
   for (let x = END + 48; x < WORLD - END - 24; x += 118) {
     const code = codeBits[row++ % 4];
-    for (const l of [56, W - 56]) tag0(addFieldMark(s, s.add.text(0, 0, code, mono).setOrigin(.5).setAlpha(.72), x, l));
+    for (const l of [56, W - 56]) tag0(addFieldMark(s, T(s, 0, 0, code, mono).setAlpha(.72), x, l));
   }
   const mid = WORLD / 2;
   // The home team's name is painted down the length of the field, one letter per depth slot so each glyph
   // gets its own perspective scale. Letters lie rotated (`rot`): their ground squash goes on the local x axis.
   s.midL = [];
-  for (let i = 0; i < 18; i++) s.midL.push(tag0(addFieldMark(s, s.add.text(0, 0, '', { ...paint, stroke: '#050d20', strokeThickness: 8 }).setOrigin(.5), mid, W / 2)));
+  for (let i = 0; i < 18; i++) s.midL.push(tag0(addFieldMark(s, T(s, 0, 0, '', { ...paint, stroke: '#050d20', strokeThickness: 8 }), mid, W / 2)));
   // LED dot-matrix boards in the Platanus Hack site's style; they are the only art on Platanus's home field (hk = 1).
   dotText(s, 'led', 'PLATANUS HACK');
   for (const x of [END / 2, WORLD - END / 2]) addFieldMark(s, s.add.image(0, 0, 'led'), x, W / 2).hk = 1;
@@ -1126,8 +1141,12 @@ function renderWorld(s, time) {
     if (s.camView) { s.cx = WORLD - s.cx; s.cl = W - s.cl; s.cameras.main.flash(220, 5, 13, 32); }
     s.camView = s.s;
   }
-  s.cx += (U(carrier.x) - s.cx) * .08;
-  s.cl += (M(clp(fieldScreenX(carrier.y), 280, 520)) - s.cl) * .08;
+  // Slower follow keeps the view calm when the runner jukes; the lateral axis is the one that made people dizzy.
+  s.cx += (U(carrier.x) - s.cx) * .07;
+  s.cl += (M(clp(fieldScreenX(carrier.y), 280, 520)) - s.cl) * .045;
+  // A pile-up raises the camera: more height spreads players that overlap in depth into separate screen rows.
+  const pack = s.d.flat().filter(p => p !== carrier && dst(p.x, p.y, carrier.x, carrier.y) < 120).length;
+  s.ch += (CAMH + 22 * Math.min(pack, 5) - s.ch) * .03;
   const x0 = s.cx - BACK + NEAR;
   const poly = (color, ...p) => { g.fillStyle(color); g.beginPath(); g.moveTo(p[0], p[1]); for (let i = 2; i < 8; i += 2) g.lineTo(p[i], p[i + 1]); g.closePath(); g.fillPath(); };
   // band and stripe take field coordinates and clip against the camera in view space.
@@ -1183,7 +1202,7 @@ function renderWorld(s, time) {
   for (const m of s.v) {
     const z = U(m.fx) - s.cx + BACK, k = FOC / z;
     // Flat ground art is squashed by the same factor the ground plane is foreshortened at that depth.
-    if (m.setVisible(!m.off && z > NEAR * .7 && k > .22).visible) m.setPosition(...pj(s, m.fx, m.fl).slice(0, 2)).setScale(m.rot ? k * CAMH / z : k, m.rot ? k : k * CAMH / z).setRotation(m.rot ? -1.5708 * s.s : 0);
+    if (m.setVisible(!m.off && z > NEAR * .7 && k > .22).visible) m.setPosition(...pj(s, m.fx, m.fl).slice(0, 2)).setScale(m.rot ? k * s.ch / z : k, m.rot ? k : k * s.ch / z).setRotation(m.rot ? -1.5708 * s.s : 0);
   }
   const [h0, h1] = humans(s, carrier);
   for (const p of s.d.flat()) {
@@ -1387,10 +1406,10 @@ function createIntroArt(s) {
   for (let n = 10; n <= 60; n += 10) {
     const left = 191 + n * 3.215, right = 609 - n * 3.215;
     for (const x of [left, right]) for (const y of [177, 423]) {
-      s.n.push(s.k.add(s.add.text(x, y, String(n), { ...AB, fontSize: '11px', color: '#ffc857', stroke: '#050d20', strokeThickness: 2 }).setOrigin(.5)));
+      s.n.push(s.k.add(T(s, x, y, String(n), { ...AB, fontSize: '11px', color: '#ffc857', stroke: '#050d20', strokeThickness: 2 })));
     }
   }
-  s.n.push(s.k.add(s.add.text(W / 2, H / 2, 'HACK 26', { ...AB, fontSize: '20px', color: '#ffc857', stroke: '#050d20', strokeThickness: 5 }).setOrigin(.5)));
+  s.n.push(s.k.add(T(s, W / 2, H / 2, 'HACK 26', { ...AB, fontSize: '20px', color: '#ffc857', stroke: '#050d20', strokeThickness: 5 })));
   return g;
 }
 
