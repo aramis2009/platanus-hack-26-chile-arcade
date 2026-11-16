@@ -25,7 +25,7 @@ const TEAMS = [
 const AB = { fontFamily: 'Arial Black, sans-serif', fontStyle: 'bold' }, MO = { fontFamily: 'monospace', fontStyle: 'bold' };
 // [skin, hair] for the chibi players on the team screen.
 const LOOKS = [[0xf0c49a, 0x2b1b0f], [0xc68642, 0x111111], [0xf0c49a, 0xd9a441], [0x8d5524, 0x111111], [0xe0ac69, 0x6b3b1a]];
-// Ball styles for the ball screen. Curve 0 makes a football, curve 7 a banana; tips are drawn only when given.
+// Ball styles for the ball screen. Curve 0 makes a football, curve 7 a av; tips are drawn only when given.
 // The last flag turns a football into a drone: four rotor arms, a camera lens at the nose and a status light.
 const BALLS = [['PLATANUS BALL', 7, 11, 0xffc857, 0xd78c25, 0xfff3a8, 0xf7f9ff, 0x5e3614, 0x5e3614, 0x2b1a0d], ['CLASSIC BALL', 0, 20, 0x8a4b22, 0x5e3014, 0xc0713c, 0xf7f9ff, 0x2a1408, 0, 0],
   ['OSIRIS BALL', 0, 20, 0x1c1c1c, 0x0d0d0d, 0x4a4a4a, 0xffc857, 0xffc857, 0, 0, 1], ['NEON BALL', 0, 20, 0x0b1b3a, 0x050d20, 0x1b3a70, 0xeeff00, 0xeeff00, 0, 0]];
@@ -33,6 +33,8 @@ const BALLS = [['PLATANUS BALL', 7, 11, 0xffc857, 0xd78c25, 0xfff3a8, 0xf7f9ff, 
 Phaser.GameObjects.GameObject.prototype.ui = function (d) { return this.setScrollFactor(0).setDepth(d); };
 // Short aliases for the Phaser maths used all over the game logic.
 const sin = Math.sin, abs = Math.abs, rand = Math.random, dst = Phaser.Math.Distance.Between, clp = Phaser.Math.Clamp, lrp = Phaser.Math.Linear, rbt = Phaser.Math.Between;
+// Loudness of the music bus; the crowd and the effects share the same master gain.
+const MUSIC_VOL = .4;
 const TOP_KEY = 'oye-ibai:top5';
 const TOUCHDOWN_EMOJIS =['🏈', '🎉', '🏆', '🕺', '🔥', '🍌', '🙌', '⚡', '👑', '💥'];
 
@@ -99,12 +101,10 @@ function create() {
   s.w = s.add.graphics().ui(35);
   s.sel = [
     s.add.text(W / 2, 64, 'CHOOSE YOUR MODE', { ...big, fontSize: '32px' }).setOrigin(.5),
-    s.add.text(265, 232, '1 PLAYER\nYOU VS CPU', { ...big, fontSize: '22px' }).setOrigin(.5),
-    s.add.text(535, 232, '2 PLAYERS\nP1 VS P2', { ...big, fontSize: '22px' }).setOrigin(.5),
-    s.add.text(168, 312, 'P1   MOVE  WASD\n     PASS  U   LONG  O\n     JUKE / TACKLE  I\n     FIELD GOAL     J\n     PEEL / PUSH    K\n     JUMP           L', mono),
-    s.add.text(420, 312, 'P2   MOVE  ARROWS\n     PASS  R   LONG  Y\n     JUKE / TACKLE  T\n     FIELD GOAL     F\n     PEEL / PUSH    G\n     JUMP           H', mono),
-    s.add.text(W / 2, 536, '<  >  CHOOSE     START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }).setOrigin(.5),
-    s.add.text(W / 2, 496, 'P2 CAN ALSO JOIN A SOLO MATCH BY MOVING', { ...mono, fontSize: '11px', color: '#c5d9f2' }).setOrigin(.5)
+    s.add.text(265, 286, '1 PLAYER\nYOU VS CPU', { ...big, fontSize: '22px' }).setOrigin(.5),
+    s.add.text(535, 286, '2 PLAYERS\nP1 VS P2', { ...big, fontSize: '22px' }).setOrigin(.5),
+    s.add.text(W / 2, 550, '<  >  CHOOSE     START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }).setOrigin(.5),
+    s.add.text(W / 2, 518, 'P2 CAN ALSO JOIN A SOLO MATCH BY MOVING', { ...mono, fontSize: '11px', color: '#c5d9f2' }).setOrigin(.5)
   ];
   s.sel.forEach(t => t.ui(36).setVisible(false));
   s.tm = [
@@ -120,6 +120,15 @@ function create() {
   s.ball = 0;
   s.bl = BALLS.map((b, i) => s.add.text(184 + i * 144, 340, b[0].replace(' ', '\n'), { ...big, fontSize: '16px' }).setOrigin(.5, 0).ui(36).setVisible(false));
   s.bp = BALLS.map((b, i) => makeBanana(s, 184 + i * 144, 255, 2, i).ui(37).setVisible(false));
+  // How-to-play page: gold labels on the left, one line of advice per row on the right.
+  const row = { ...mono, fontSize: '15px', lineSpacing: 31 };
+  s.hw = [
+    s.add.text(W / 2, 64, 'HOW TO PLAY', { ...big, fontSize: '32px' }).setOrigin(.5),
+    s.add.text(120, 140, 'RUN\nPASS\nDODGE\nDEFEND\nWIN\nP2', { ...row, color: '#ffc857' }),
+    s.add.text(206, 140, 'MOVE WITH WASD · REACH THE END ZONE FOR 6 POINTS\nU SHORT · O LONG · AIM WITH WASD AT THE GREEN RING\nI JUKE · L JUMP · K PUSH THE NEAREST DEFENDER\nTOUCH THE RUNNER TO TACKLE · I DIVE · K DROP A PEEL\nFIRST TO 21 · 4 DOWNS TO GAIN 10 YARDS\nARROWS MOVE · R/Y PASS · T JUKE · H JUMP · G PUSH', row),
+    s.add.text(W / 2, 550, 'START  PLAY     I  BACK', { ...big, fontSize: '18px', color: '#ffc857' }).setOrigin(.5)
+  ];
+  s.hw.forEach(t => t.ui(36).setVisible(false));
   s.q.setVisible(false); s.W.setVisible(false);
 }
 
@@ -141,13 +150,15 @@ function update(time, delta) {
     updateTeams(s, time);
   } else if (s.c === 'balls') {
     updateBalls(s, time);
+  } else if (s.c === 'howto') {
+    updateHow(s, time);
   } else if (s.c === 'initials') {
     updateInitials(s);
   } else if (s.c === 'playing') {
     if (s.b.pressed.START1 || s.b.pressed.START2) { s.c = 'paused'; s.h.setText('PAUSED\nPRESS START TO RESUME').setVisible(true); }
     else playFrame(s, time, dt);
   } else if (s.c === 'tackled') {
-    if (time >= s.tackleUntil) finishPlay(s, s.tackleSpot, time, 'TACKLED!');
+    if (time >= s.ab) finishPlay(s, s.aq, time, 'TACKLED!');
   } else if (s.c === 'kicking') {
     updateFieldGoal(s, time, dt);
   } else if (s.c === 'penalty') {
@@ -169,6 +180,7 @@ function update(time, delta) {
     const help = s.c === 'countdown' || s.c === 'paused' || s.c === 'penalty';
     s.q.setVisible(help); s.W.setVisible(help);
   }
+  playMusic(s);
   s.b.pressed = {};
   // Screen-fixed objects render only on the HUD camera, everything else only on the zoomed world camera.
   for (const o of s.children.list) o.cameraFilter = o.scrollFactorX ? s.ui.id : s.cameras.main.id;
@@ -178,7 +190,7 @@ function startMatch(s, time) {
   s.P = [0, 0]; s.a = 0; s.g = null; s.kick = null; s.H = null; s.duo = !!s.o; s.c = 'countdown'; s.e = time + 1700; s.A = 1; s.j = WORLD / 2;
   s.J = null; s.l = false; s.snap = false; s.cd = [0, 0];
   [s.M, s.V, s.D, s.hud, s.Q, s.U, s.E, s.z].forEach(item => item.setVisible(true));
-  [s.w, ...s.sel, ...s.tm, ...s.bl, ...s.bp, s.C, s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit].forEach(o => o.setVisible(false));
+  [s.w, ...s.sel, ...s.tm, ...s.bl, ...s.bp, ...s.hw, s.C, s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit].forEach(o => o.setVisible(false));
   s.T = s.p.map(i => TEAMS[i]);
   s.M.clear(); drawHudPlate(s.M, s.T[0][2], s.T[1][2]);
   const hk = s.T[0][6];
@@ -216,11 +228,25 @@ function showBalls(s) {
   s.tm.forEach(o => o.setVisible(false)); [s.tm[0], s.tm[6], ...s.bl, ...s.bp].forEach(o => o.setVisible(true)); s.tm[0].setText('CHOOSE YOUR BALL');
 }
 
+// The page sits between the ball screen and the kickoff; START skips it. Rematches after a game over go straight to the field.
+function showHow(s) {
+  s.c = 'howto';
+  [s.tm[0], s.tm[6], ...s.bl, ...s.bp].forEach(o => o.setVisible(false)); s.hw.forEach(o => o.setVisible(true));
+}
+
+function updateHow(s, time) {
+  const p = s.b.pressed;
+  if (p.P1_2 || p.P2_2) { s.hw.forEach(o => o.setVisible(false)); return showBalls(s); }
+  if (p.P1_1 || p.P2_1 || p.START1 || p.START2) return startMatch(s, time);
+  s.w.clear().fillStyle(0x050d20, .92).fillRoundedRect(100, 112, 600, 330, 16).lineStyle(2, C.gold, .6).strokeRoundedRect(100, 112, 600, 330, 16);
+  s.hw[3].setAlpha(.7 + sin(time / 250) * .3);
+}
+
 function updateBalls(s, time) {
   const p = s.b.pressed;
   if (p.P1_2 || p.P2_2) return showTeams(s);
   s.ball = (s.ball + (p.P1_R || p.P2_R ? 1 : 0) + (p.P1_L || p.P2_L ? 3 : 0)) % 4;
-  if (p.P1_1 || p.P2_1 || p.START1 || p.START2) return startMatch(s, time);
+  if (p.P1_1 || p.P2_1 || p.START1 || p.START2) return showHow(s);
   const g = s.w.clear();
   BALLS.forEach((b, i) => {
     const on = i === s.ball, x = 119 + i * 144, pop = on ? 3 + sin(time / 150) * 3 : 0;
@@ -261,6 +287,7 @@ function updateTeams(s, time) {
 }
 
 function showSelect(s) {
+  startStadiumAudio(s);
   s.c = 'select';
   [s.k, s.y, ...s.n, s.u, s.B, s.K, s.best, s.credit, ...s.tm].forEach(o => o.setVisible(false));
   [s.C, s.w, ...s.sel].forEach(o => o.setVisible(true));
@@ -269,17 +296,15 @@ function showSelect(s) {
 // Mode cards are redrawn every frame so the selected one can pulse; the P2 controls dim in solo mode.
 function drawSelect(s, time) {
   const g = s.w.clear(), two = !!s.o;
-  g.fillStyle(0x050d20, .92).fillRoundedRect(150, 296, 500, 160, 16).lineStyle(2, C.gold, .6).strokeRoundedRect(150, 296, 500, 160, 16);
-  g.lineStyle(1, 0x2f5090).lineBetween(W / 2, 312, W / 2, 440);
   for (let i = 0; i < 2; i++) {
     const on = two === !!i, x = 140 + i * 270, pop = on ? 3 + sin(time / 160) * 3 : 0;
-    g.fillStyle(on ? 0x1b3a70 : 0x0f2447, .96).fillRoundedRect(x - pop, 126 - pop, 250 + pop * 2, 150 + pop * 2, 18);
-    g.lineStyle(on ? 4 : 2, on ? C.gold : 0x2f5090).strokeRoundedRect(x - pop, 126 - pop, 250 + pop * 2, 150 + pop * 2, 18);
+    g.fillStyle(on ? 0x1b3a70 : 0x0f2447, .96).fillRoundedRect(x - pop, 180 - pop, 250 + pop * 2, 150 + pop * 2, 18);
+    g.lineStyle(on ? 4 : 2, on ? C.gold : 0x2f5090).strokeRoundedRect(x - pop, 180 - pop, 250 + pop * 2, 150 + pop * 2, 18);
     // The helmeted head of the field players: a blue helmet for P1 and a red one for P2.
-    for (let h = 0; h <= i; h++) paint(g, chibi(C.cream, h ? 0xff5a4a : 0x4aa8ff, LOOKS[h ? 1 : 0]).slice(5, 7), x + 125 + (i ? h * 80 - 40 : 0), 148, 3.2);
+    for (let h = 0; h <= i; h++) paint(g, chibi(C.cream, h ? 0xff5a4a : 0x4aa8ff, LOOKS[h ? 1 : 0]).slice(5, 7), x + 125 + (i ? h * 80 - 40 : 0), 202, 3.2);
     s.sel[1 + i].setAlpha(on ? 1 : .5);
   }
-  s.sel[4].setAlpha(two ? 1 : .3); s.sel[5].setAlpha(.7 + sin(time / 250) * .3);
+  s.sel[3].setAlpha(.7 + sin(time / 250) * .3);
 }
 
 function beginCountdown(s, time) {
@@ -306,8 +331,8 @@ function updateCelebration(s, time) {
   const sc = s.scorer;
   // Teammates sprint to the scorer and bounce around them while the dance plays.
   if (sc && s.d[sc.team].includes(sc)) for (const m of s.d[sc.team]) if (m !== sc) {
-    const dx = sc.x - m.x, dy = sc.y + (m.number - 2) * 24 - m.y, far = Math.hypot(dx, dy) > 44;
-    m.x += dx * .05; m.y += dy * .05; m.moving = far; m.hop = far ? 0 : abs(sin(time / 140 + m.number));
+    const dx = sc.x - m.x, dy = sc.y + (m.au - 2) * 24 - m.y, far = Math.hypot(dx, dy) > 44;
+    m.x += dx * .05; m.y += dy * .05; m.ax = far; m.hop = far ? 0 : abs(sin(time / 140 + m.au));
   }
   if (time < s.r) return;
   if (s.J !== null) {
@@ -323,7 +348,7 @@ function updateCelebration(s, time) {
   beginCountdown(s, time);
 }
 
-// Button 5 depends on the side: the defense drops a banana peel, the carrier stiff-arms the nearest defender.
+// Button 5 depends on the side: the defense drops a av peel, the carrier stiff-arms the nearest defender.
 // Each team shares one 4 s cooldown so neither move can be spammed.
 function special(s, p, team, time) {
   if (time < s.cd[team] || s.g) return;
@@ -334,9 +359,9 @@ function special(s, p, team, time) {
   }
   if (p !== s.d[team][0]) return;
   const dist = o => dst(o.x, o.y, p.x, p.y), d = s.d[1 - team].reduce((a, b) => dist(a) < dist(b) ? a : b);
-  p.pushUntil = time + 300;
+  p.ae = time + 300;
   if (dist(d) > 70) return playCue(s, 'WHIFF!', '#8fd0ff', time, 400);
-  d.stunUntil = d.contactUntil = time + 1300; d.x += Math.sign(d.x - p.x || 1) * 45;
+  d.af = d.ac = time + 1300; d.x += Math.sign(d.x - p.x || 1) * 45;
   s.tweens.add({ targets: d, fall: 1, duration: 140, yoyo: true, hold: 1000 });
   playCue(s, 'STIFF ARM!', '#8fd0ff', time, 600); thud(s, 150, .2, .9); impactBurst(s, d.x, d.y, C.gold, 10); s.cameras.main.shake(100, .005);
 }
@@ -369,7 +394,7 @@ function updateInitials(s) {
 
 function makeTeams(s, firstTeam = 0, spot = WORLD / 2) {
   s.G = null;
-  s.d.flat().forEach(p => { p.root.destroy(); p.roleLabel.destroy(); p.controlLabel.destroy(); }); s.d = [[], []];
+  s.d.flat().forEach(p => { p.root.destroy(); p.am.destroy(); p.ao.destroy(); }); s.d = [[], []];
   const starts = firstTeam === 0
     ? [[870, 860, 860, 835], [1035, 1010, 1010, 1060]]
     : [[765, 790, 790, 740], [930, 950, 950, 965]];
@@ -407,13 +432,13 @@ function paint(g, parts, x, y, k) {
   g.restore();
 }
 
-function createPlayer(s, team, number, x, y) {
+function createPlayer(s, team, au, x, y) {
   const [, , color, trim] = s.T[team], K = 1.8;
   // Brighter than the kit colours so the human-controlled marker reads against the navy turf from cabinet distance.
   const pc = team ? 0xff5a4a : 0x4aa8ff;
   // Upright billboard with its origin at the feet, so the projected ground point anchors it.
   const root = s.add.container(0, 0);
-  const ballRing = s.add.ellipse(0, 0, 62, 22, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ballRing);
+  const ap = s.add.ellipse(0, 0, 62, 22, C.gold, .16).setStrokeStyle(2, C.gold, .9).setVisible(false); root.add(ap);
   root.add(s.add.ellipse(0, 0, 44, 13, C.black, .45));
   const ring = s.add.ellipse(0, 0, 80, 28).setStrokeStyle(4, pc); root.add(ring);
   // Each part group is a container pivoting at (ox, oy), so the run cycle can lift a leg or swing an arm as one piece.
@@ -423,15 +448,15 @@ function createPlayer(s, team, number, x, y) {
     return root.add(c) && c;
   };
   const [legL, legR, body, armL, armR, head, face, nape] = chibi(color, trim, LOOKS[s.p[team]]);
-  const limbs = [grp(legL), grp(legR)]; grp(body); limbs.push(grp(armL, -11, 17), grp(armR, 11, 17)); grp(head);
+  const aw = [grp(legL), grp(legR)]; grp(body); aw.push(grp(armL, -11, 17), grp(armR, 11, 17)); grp(head);
   // Facing the camera shows the face; facing away shows the back of the head.
   const napeG = grp(nape), faceG = grp(face);
-  root.add(s.add.text(0, -47, String([12, 24, 55, 87][number]), { ...AB, fontSize: '13px', color: '#f7f9ff', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5));
-  const roleLabel = s.add.text(0, 0, '', { ...MO, fontSize: '10px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
-  const controlLabel = s.add.text(0, 0, team === 0 ? 'P1' : 'P2', { ...AB, fontSize: '16px', color: team ? '#ff5a4a' : '#4aa8ff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
-  const banana = makeBanana(s, 17, -36, .5); root.add(banana); banana.setRotation(.6).setVisible(false);
+  root.add(s.add.text(0, -47, String([12, 24, 55, 87][au]), { ...AB, fontSize: '13px', color: '#f7f9ff', stroke: '#0b1b3a', strokeThickness: 3 }).setOrigin(.5));
+  const am = s.add.text(0, 0, '', { ...MO, fontSize: '10px', color: '#f7f9ff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(10);
+  const ao = s.add.text(0, 0, team === 0 ? 'P1' : 'P2', { ...AB, fontSize: '16px', color: team ? '#ff5a4a' : '#4aa8ff', stroke: '#050d20', strokeThickness: 4 }).setOrigin(.5).setDepth(11).setVisible(false);
+  const av = makeBanana(s, 17, -36, .5); root.add(av); av.setRotation(.6).setVisible(false);
   const arrow = s.add.triangle(0, -126, 0, 0, 22, 0, 11, 16, pc).setStrokeStyle(2, C.cream); root.add(arrow);
-  return { root, limbs, face: [faceG], nape: napeG, marks: [ring, arrow], banana, roleLabel, controlLabel, ballRing, team, number, position: number, x, y, jukeUntil: 0, tackleUntil: 0 };
+  return { root, aw, face: [faceG], nape: napeG, marks: [ring, arrow], av, am, ao, ap, team, au, ar: au, x, y, aa: 0, ab: 0 };
 }
 
 function playFrame(s, time, dt) {
@@ -447,8 +472,8 @@ function playFrame(s, time, dt) {
     const members = s.d[team];
     for (const p of members) {
       let vx = 0, vy = 0;
-      p.roleLabel.setText(roleName(p.position, team === s.a));
-      p.ballRing.setVisible(p === carrier && !s.g);
+      p.am.setText(roleName(p.ar, team === s.a));
+      p.ap.setVisible(p === carrier && !s.g);
       if (controlledSet.has(p)) {
         const pre = team === 0 ? 'P1_' : 'P2_';
         // Directions are screen-relative and the camera turns with possession, so they flip with the view.
@@ -456,14 +481,14 @@ function playFrame(s, time, dt) {
         vy = ((held(s, pre + 'R') ? 1 : 0) - (held(s, pre + 'L') ? 1 : 0)) * s.s;
         if (p === carrier && !s.g) s.aim = [p, passTarget(s, p, vx, vy)[0]];
         if (p === carrier && !s.g && s.b.pressed[pre + '4'] && attemptFieldGoal(s, p, time)) return;
-        if (p === carrier && !s.g && s.b.pressed[pre + '6'] && time > (p.jumpReady || 0)) { p.jumpStart = time; p.jumpUntil = time + 620; p.jumpReady = time + 1350; p.jumpDodged = false; }
+        if (p === carrier && !s.g && s.b.pressed[pre + '6'] && time > (p.ak || 0)) { p.ai = time; p.aj = time + 620; p.ak = time + 1350; p.al = false; }
         if (p === carrier && !s.g && (s.b.pressed[pre + '1'] || s.b.pressed[pre + '3'])) {
           throwBanana(s, p, vx, vy, time, s.b.pressed[pre + '3']);
         }
         if (s.b.pressed[pre + '5']) special(s, p, team, time);
         if (s.b.pressed[pre + '2']) {
-          if (team === s.a) p.jukeUntil = time + 320;
-          else p.tackleUntil = time + 360;
+          if (team === s.a) p.aa = time + 320;
+          else p.ab = time + 360;
           impactBurst(s, p.x, p.y, C.cream, 6, 1);
         }
       } else if (p === carrier) {
@@ -484,16 +509,16 @@ function playFrame(s, time, dt) {
         vx = clp((targetX - p.x) / 115, -1, 1);
         vy = clp((targetY - p.y) / 85, -1, 1);
       }
-      if (time < (p.stunUntil || 0)) vx = vy = 0;
+      if (time < (p.af || 0)) vx = vy = 0;
       const mag = Math.hypot(vx, vy) || 1;
-      const dashing = time < p.jukeUntil || time < p.tackleUntil;
-      const chaseGap = team !== s.a ? dst(p.x, p.y, carrier.x, carrier.y) : 0;
-      const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.a ? (p.position === 1 || p.position === 2 ? 205 : 178) : chaseGap > 160 ? 218 : 188;
+      const dashing = time < p.aa || time < p.ab;
+      const chaseGap = team !== s.a ? dst(p.x, p.y, carrier.x, carrier.y) : 0, hd = s.duo || team === 1;
+      const speed = controlledSet.has(p) ? (dashing ? 325 : 238) : team === s.a ? (p.ar === 1 || p.ar === 2 ? 205 : 178) : (chaseGap > 160 ? 218 + 8 * hd : 188 + 18 * hd) + (hd && !s.duo ? Math.min(s.P[0] / 6, 3) * 7 : 0);
       p.x = clp(p.x + vx / mag * speed * dt / 1000, 24, WORLD - 24);
       p.y = clp(p.y + vy / mag * speed * dt / 1000, TOP + 30, BOTTOM - 27);
-      p.hop = time < (p.jumpUntil || 0) ? sin((time - p.jumpStart) / (p.jumpUntil - p.jumpStart) * Math.PI) * 2 : 0;
-      p.moving = Math.hypot(vx, vy) > .15; p.lean = p.moving ? vy / mag * s.s : 0;
-      p.banana.setVisible(p === carrier && !s.g && !s.x);
+      p.hop = time < (p.aj || 0) ? sin((time - p.ai) / (p.aj - p.ai) * Math.PI) * 2 : 0;
+      p.ax = Math.hypot(vx, vy) > .15; p.lean = p.ax ? vy / mag * s.s : 0;
+      p.av.setVisible(p === carrier && !s.g && !s.x);
     }
   }
   if (s.g) updatePass(s, dt, time);
@@ -502,28 +527,29 @@ function playFrame(s, time, dt) {
   // The solo CPU defense lobs a peel into the carrier's path now and then, so the gag also happens in 1P.
   if (!s.duo && s.a === 0 && time > s.cd[1] && rand() < .006) special(s, { x: current.x + 120, y: current.y }, 1, time);
   for (const pl of s.S) if (!s.g && dst(pl.x, pl.y, current.x, current.y) < 26) {
-    pl.until = 0; current.stunUntil = time + 900; s.tweens.add({ targets: current, fall: 1, duration: 160, ease: 'Quad.In', yoyo: true, hold: 600 });
+    pl.until = 0; current.af = time + 900; s.tweens.add({ targets: current, fall: 1, duration: 160, ease: 'Quad.In', yoyo: true, hold: 600 });
     playCue(s, 'SLIPPED!', '#ffd23f', time, 700); thud(s, 320, .4, .6, 0, .2); impactBurst(s, current.x, current.y, 0xffd23f, 12, 1);
   }
   s.S = s.S.filter(pl => pl.until > time);
   if (!s.g && !s.x && time > s.e) {
     for (const defender of s.d[1 - s.a]) {
       const distance = dst(current.x, current.y, defender.x, defender.y);
-      if (distance < 25 && time > (defender.contactUntil || 0)) {
-        if (time < (current.jumpUntil || 0)) { if (!current.jumpDodged) { current.jumpDodged = true; current.x = clp(current.x + attack * 24, END + 28, WORLD - END - 28); playCue(s, 'HURDLE!', '#ffc857', time, 500); impactBurst(s, current.x, current.y, C.gold, 10, 1); } break; }
+      const hd = s.a === 0 || s.duo;
+      if (distance < (hd ? 28 : 25) && time > (defender.ac || 0)) {
+        if (time < (current.aj || 0)) { if (!current.al) { current.al = true; current.x = clp(current.x + attack * 24, END + 28, WORLD - END - 28); playCue(s, 'HURDLE!', '#ffc857', time, 500); impactBurst(s, current.x, current.y, C.gold, 10, 1); } break; }
         if (!controlledSet.has(current) && time > s.cd[s.a] && rand() < .3) { special(s, current, s.a, time); break; }
-        defender.contactUntil = time + 850;
+        defender.ac = time + 850;
         playCrowd(s, .55, .72);
         impactBurst(s, defender.x, defender.y, C.red);
         const roll = rbt(1, 100);
         if (roll <= 5) { callDefensiveFoul(s, current, time); return; }
         // A juke timed into contact is the carrier's main counterplay; a dive tackle trades reach for fumble odds.
-        if (roll <= (time < current.jukeUntil ? 75 : 25)) {
+        if (roll <= (time < current.aa ? (hd ? 62 : 75) : hd ? 20 : 25)) {
           current.x = clp(current.x - attack * 22, END + 28, WORLD - END - 28);
           playCue(s, 'BROKEN TACKLE!', '#8fd0ff', time, 400);
           break;
         }
-        if (roll <= (time < defender.tackleUntil ? 45 : 32)) {
+        if (roll <= (time < defender.ab ? 45 : 32)) {
           startTackleFall(s, current, defender, time);
           dropBanana(s, current.x, current.y, time, 1 - s.a);
           playCue(s, 'FUMBLE!', '#ef6a60', time, 750); s.cameras.main.flash(180, 213, 43, 30); thud(s, 90, .3, .9); return;
@@ -532,7 +558,7 @@ function playFrame(s, time, dt) {
         s.cameras.main.shake(160, .009); thud(s, 110, .28, 1);
         startTackleFall(s, current, defender, time);
         impactBurst(s, current.x, current.y, [C.grass, C.cream, 0x2f8a4c], 14, 1);
-        s.c = 'tackled'; s.tackleUntil = time + 650; s.tackleSpot = current.x; return;
+        s.c = 'tackled'; s.ab = time + 650; s.aq = current.x; return;
       }
     }
   }
@@ -548,26 +574,26 @@ function playFrame(s, time, dt) {
 
 function startTackleFall(s, carrier, tackler, time) {
   s.G = { carrier, tackler, start: time };
-  carrier.stunUntil = tackler.stunUntil = time + 650;
+  carrier.af = tackler.af = time + 650;
   s.tweens.add({ targets: s.cameras.main, zoom: 1.16, duration: 120, yoyo: true, hold: 220, ease: 'Quad.Out' });
 }
 
-function roleName(position, offense) {
+function roleName(ar, offense) {
   const offenseRoles = ['QB', 'WR', 'WR', 'RB'];
   const defenseRoles = ['LB', 'CB', 'CB', 'EDGE'];
-  return (offense ? offenseRoles : defenseRoles)[position];
+  return (offense ? offenseRoles : defenseRoles)[ar];
 }
 
 function offenseTarget(s, p, carrier, attack, time) {
-  if (p.position === 1 || p.position === 2) {
-    const lane = p.position === 1 ? TOP + 56 : BOTTOM - 56;
-    const route = sin(time / 470 + p.position * 2) * 18;
-    const lead = p.position === 1 ? 225 : 285;
+  if (p.ar === 1 || p.ar === 2) {
+    const lane = p.ar === 1 ? TOP + 56 : BOTTOM - 56;
+    const route = sin(time / 470 + p.ar * 2) * 18;
+    const lead = p.ar === 1 ? 225 : 285;
     // While the passer drops back, routes are measured from the line of scrimmage, not from the retreating passer.
     return [clp(s.dropping ? s.los + attack * lead * .5 : carrier.x + attack * lead, END + 42, WORLD - END - 42), lane + route];
   }
   const rusher = nearestPlayer(s.d[1 - s.a], carrier);
-  if (p.position === 3) {
+  if (p.ar === 3) {
     const close = dst(rusher.x, rusher.y, carrier.x, carrier.y) < 210;
     return [carrier.x + attack * (close ? 72 : 48), close ? lrp(carrier.y, rusher.y, .55) : carrier.y + 58];
   }
@@ -575,18 +601,22 @@ function offenseTarget(s, p, carrier, attack, time) {
 }
 
 function defenseTarget(s, p, carrier, attack, time) {
-  if (p.position === 1 || p.position === 2) {
-    const gap = dst(p.x, p.y, carrier.x, carrier.y);
-    if (gap > 210) {
-      const side = p.position === 1 ? -1 : 1;
-      return [carrier.x + attack * 58, clp(carrier.y + side * 42, TOP + 35, BOTTOM - 35)];
+  if (p.ar === 1 || p.ar === 2) {
+    const gap = dst(p.x, p.y, carrier.x, carrier.y), offense = s.d[s.a];
+    let receiver = offense.find(q => q.ar === p.ar && q !== carrier);
+    if (!receiver) receiver = offense.find(q => (q.ar === 1 || q.ar === 2) && q !== carrier);
+    if (attack > 0 || s.duo) {
+      // The CPU's cornerbacks shadow their receiver for as long as the ball is behind the line, however deep the route
+      // goes, and only chase the ball once it crosses (a run, a scramble or a catch). Their distance to the receiver
+      // swings between 28 and 88 px, so a pass is only on in short windows (about a third of the time).
+      if (receiver && (carrier.x - s.los) * attack < 40) return [receiver.x + attack * (58 + 30 * sin(time / 450 + p.ar * 2.1)), receiver.y + (p.ar === 1 ? 18 : -18)];
+    } else {
+      // The human's own AI teammates keep the original, looser coverage, so the CPU offense plays as it always did.
+      if (gap > 210) return [carrier.x + attack * 58, clp(carrier.y + (p.ar === 1 ? -42 : 42), TOP + 35, BOTTOM - 35)];
+      if (receiver) return [receiver.x + attack * 34, receiver.y + (p.ar === 1 ? 18 : -18)];
     }
-    const offense = s.d[s.a];
-    let receiver = offense.find(q => q.position === p.position && q !== carrier);
-    if (!receiver) receiver = offense.find(q => (q.position === 1 || q.position === 2) && q !== carrier);
-    if (receiver) return [receiver.x + attack * 34, receiver.y + (p.position === 1 ? 18 : -18)];
   }
-  if (p.position === 3) return [carrier.x + attack * 10, carrier.y];
+  if (p.ar === 3) return [carrier.x + attack * 10, carrier.y];
   return [carrier.x + attack * 46, clp(carrier.y + (p.y < carrier.y ? -24 : 24), TOP + 35, BOTTOM - 35)];
 }
 
@@ -596,13 +626,13 @@ function cpuCarryIntent(s, carrier, attack, time) {
     const distance = dst(carrier.x, carrier.y, p.x, p.y);
     return distance < best.distance ? { player: p, distance } : best;
   }, { player: defenders[0], distance: Infinity });
-  if (nearest.distance < 175 && time > (carrier.evadeUntil || 0)) {
-    carrier.evadeSide = nearest.player.y >= carrier.y ? -1 : 1;
-    carrier.evadeUntil = time + 650;
+  if (nearest.distance < 175 && time > (carrier.ag || 0)) {
+    carrier.ah = nearest.player.y >= carrier.y ? -1 : 1;
+    carrier.ag = time + 650;
   }
   const center = (TOP + BOTTOM) / 2;
-  const targetY = time < (carrier.evadeUntil || 0)
-    ? clp(carrier.y + carrier.evadeSide * 105, TOP + 42, BOTTOM - 42)
+  const targetY = time < (carrier.ag || 0)
+    ? clp(carrier.y + carrier.ah * 105, TOP + 42, BOTTOM - 42)
     : carrier.y + (center - carrier.y) * .12;
   const t = time - s.callAt;
   let call = carrier === s.qb ? s.call : 0, receiver = call && t > s.readAt ? findOpenReceiver(s, carrier, attack) : null;
@@ -651,7 +681,7 @@ function throwBanana(s, p, vx, vy, time, longPass, preferredTarget) {
   const [aimed, aimX, aimY] = passTarget(s, p, vx, vy, longPass);
   const target = preferredTarget || aimed;
   const attack = s.a === 0 ? 1 : -1;
-  const lead = target.position === 1 || target.position === 2 ? attack * (longPass ? 104 : 54) : 0;
+  const lead = target.ar === 1 || target.ar === 2 ? attack * (longPass ? 104 : 54) : 0;
   const baseX = clp(target.x + lead, END + 28, WORLD - END - 28), baseY = target.y;
   const aimDot = (baseX - p.x) * aimX + (baseY - p.y) * aimY;
   const alignment = clp(aimDot / Math.max(1, dst(p.x, p.y, baseX, baseY)), 0, 1);
@@ -711,7 +741,7 @@ function dropBanana(s, x, y, time, recoverTeam) {
   }
   const [px, py] = proj(s, x, y);
   s.x = { x, y, recoverTeam, landsAt: time + 360, timeoutAt: time + 1500, grounded: false, visual: makeBanana(s, px, py - 20, .84).setDepth(13), shadow: s.add.ellipse(px, py + 7, 28, 9, C.black, .38).setDepth(12) };
-  s.d[s.a][0].banana.setVisible(false);
+  s.d[s.a][0].av.setVisible(false);
 }
 
 function updateLooseBall(s, time) {
@@ -744,10 +774,10 @@ function setPossession(s, team, player) {
   s.F = 0;
   const group = s.d[team];
   if (player && player !== group[0]) {
-    const old = group[0]; group[0] = player; group[player.number] = old; old.number = player.number; player.number = 0;
+    const old = group[0]; group[0] = player; group[player.au] = old; old.au = player.au; player.au = 0;
   }
-  for (const p of s.d.flat()) p.banana.setVisible(false);
-  group[0].banana.setVisible(!s.g);
+  for (const p of s.d.flat()) p.av.setVisible(false);
+  group[0].av.setVisible(!s.g);
 }
 
 function finishPlay(s, spot, time, result) {
@@ -794,7 +824,7 @@ function attemptFieldGoal(s, kicker, time) {
   visual.cameraFilter = s.ui.id; shadow.cameraFilter = s.ui.id;
   s.kick = { team, spot: foul.spot, fromX: kicker.x, fromY: kicker.y, goalX, error, elapsed: 0, duration: 900, good: abs(error) <= 22, visual, shadow };
   s.H = null;
-  kicker.banana.setVisible(false); s.c = 'kicking'; s.m = 0;
+  kicker.av.setVisible(false); s.c = 'kicking'; s.m = 0;
   s.h.setText('FIELD GOAL!').setColor('#f7f9ff').setFontSize('30px').setAlpha(1);
   playCrowd(s, .9, 1.5);
   return true;
@@ -885,13 +915,13 @@ function scoreTouchdown(s, time) {
   s.c = 'celebrating'; s.nextTeam = 1 - s.a;
   s.J = s.P[s.a] >= 21 ? s.a : null;
   s.r = time + 2800; s.m = 0;
-  s.scorer = scorer; scorer.moving = false; scorer.dance = rbt(0, 2);
+  s.scorer = scorer; scorer.ax = false; scorer.dance = rbt(0, 2);
   s.l = false; playCrowd(s, 1.35, 2.8);
   const emoji = TOUCHDOWN_EMOJIS[rbt(0, TOUCHDOWN_EMOJIS.length - 1)];
   s.h.setText(`${emoji} TOUCHDOWN! ${emoji}\n${['BANANA SPIN', 'ROBOT', 'SPIKE!'][scorer.dance]}`).setFontSize('34px').setColor('#8fd0ff').setAlpha(1).setScale(1);
   const celebrationEmoji = s.add.text(W / 2, H / 2 - 92, emoji, { fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif', fontSize: '48px' }).setOrigin(.5).ui(29).setScale(.45);
   s.tweens.add({ targets: celebrationEmoji, y: H / 2 - 150, scale: 1.2, alpha: 0, duration: 1250, ease: 'Back.Out', onComplete: () => celebrationEmoji.destroy() });
-  scorer.ballRing.setVisible(true);
+  scorer.ap.setVisible(true);
   // Confetti in the flag's colours is screen-fixed, so it falls on the HUD camera and ignores the zoom.
   for (let i = 0; i < 48; i++) {
     const c = s.add.rectangle(rand() * W, -10 - rand() * 160, 6, 11, [s.T[s.a][2], s.T[s.a][3], C.cream][i % 3]).ui(28).setAngle(rand() * 180);
@@ -901,7 +931,7 @@ function scoreTouchdown(s, time) {
   // renderWorld owns every transform, so the dance animates a value it reads instead of the sprite.
   s.tweens.add({ targets: scorer, hop: 1, duration: 180, yoyo: true, repeat: 7, ease: 'Sine.InOut' });
   if (scorer.dance > 1) impactBurst(s, scorer.x, scorer.y, [C.gold, C.cream, s.T[s.a][2]], 18, 1);
-  s.tweens.add({ targets: scorer.ballRing, scaleX: 1.3, scaleY: .7, alpha: .7, duration: 240, yoyo: true, repeat: 4 });
+  s.tweens.add({ targets: scorer.ap, scaleX: 1.3, scaleY: .7, alpha: .7, duration: 240, yoyo: true, repeat: 4 });
   s.tweens.add({ targets: s.cameras.main, zoom: 1.25, duration: 360, ease: 'Sine.Out', yoyo: true, hold: 1320 });
 }
 
@@ -912,6 +942,8 @@ function startStadiumAudio(s) {
   try {
     ctx.resume()?.catch?.(() => {});
     s.i = ctx; s.f = ctx.createGain(); s.f.gain.value = .2; s.f.connect(ctx.destination);
+    s.mu = ctx.createGain(); s.mu.gain.value = MUSIC_VOL; s.mu.connect(s.f); s.ms = 0; s.mt = 0;
+    s.nz = ctx.createBuffer(1, ctx.sampleRate / 4, ctx.sampleRate); s.nz.getChannelData(0).forEach((_, i, a) => a[i] = rand() * 2 - 1);
     s.crowd = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const noise = s.crowd.getChannelData(0); let low = 0;
     for (let i = 0; i < noise.length; i++) { low += (rand() * 2 - 1 - low) * .045; noise[i] = low * 3; }
@@ -920,6 +952,51 @@ function startStadiumAudio(s) {
     crowd.connect(crowdFilter); crowdFilter.connect(crowdGain); crowdGain.connect(s.f); crowd.start();
   } catch (_) {
     s.i = null; s.f = null;
+  }
+}
+
+// Heroic stadium fanfare, 120 bpm in sixteenth notes over four bars (64 steps), played only in the menus. A letter is a
+// semitone above C4 in base 36 and '-' holds the previous note. Three short calls climb a step each bar (G4 to C5 to E5
+// to G5), then the last bar falls home to C5. Under it: parallel brass, a root-and-fifth bass, timpani, marching snare.
+const MELODY = '7--7-7--c-------c--c-c--g-------g--g-g--j-------j-h-g-e-c-------', ROOTS = [-24, -24, -19, -19, -17, -17, -17, -24], hz = n => 261.63 * 2 ** (n / 12);
+
+// One voice scheduled at audio time t: it starts at volume v and decays to v * r (r = .001 gives a plucked or struck sound),
+// optionally sliding down to f2 (the timpani).
+function voice(s, f, t, d, type, v, r = .001, f2) {
+  const o = s.i.createOscillator(), g = s.i.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(Math.max(v * r, .001), t + d);
+  o.connect(g); g.connect(s.mu); o.start(t); o.stop(t + d);
+}
+
+// Snare, roll and cymbal are the same white-noise buffer; a faster playback rate makes it brighter.
+function hit(s, t, d, v, rate) {
+  const b = s.i.createBufferSource(), g = s.i.createGain();
+  b.buffer = s.nz; b.playbackRate.value = rate; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  b.connect(g); g.connect(s.mu); b.start(t); b.stop(t + d);
+}
+
+// Called every frame. The music only plays in the title and menu screens and fades out as the match starts, so it never
+// runs under the game itself. While it is on, about a quarter second is kept scheduled ahead of the audio clock, so frame
+// hiccups never make it stutter; after a long pause the clock is realigned instead of replaying the backlog.
+function playMusic(s) {
+  const c = s.i, on = ['title', 'select', 'teams', 'balls', 'howto'].includes(s.c);
+  if (!c || c.state !== 'running') return;
+  if (on !== s.mo) { s.mo = on; s.mu.gain.setTargetAtTime(on ? MUSIC_VOL : 0, c.currentTime, .2); }
+  if (!on) return;
+  if (!(s.mt > c.currentTime - .5)) s.mt = c.currentTime + .05;
+  for (; s.mt < c.currentTime + .25; s.mt += .125) {
+    const k = s.ms++ % 64, q = k & 15, t = s.mt, m = MELODY[k];
+    if (m != '-') {
+      // A held note lasts until the next one starts; the brass swells and sustains instead of plucking.
+      let n = 1; while (MELODY[(k + n) % 64] == '-' && n < 8) n++;
+      const f = parseInt(m, 36), d = n * .12;
+      voice(s, hz(f), t, d, 'square', .3, .6); voice(s, hz(f - 12), t, d, 'sawtooth', .16, .6); voice(s, hz(f - 7), t, d, 'square', .14, .6);
+    }
+    if (q % 4 == 0) voice(s, hz(ROOTS[k >> 3] + (q % 8 ? 7 : 0)), t, .24, 'triangle', .5, .3);
+    if (q % 8 == 0) voice(s, 130, t, .26, 'sine', .9, .001, 40);
+    if (q == 4 || q == 12 || k > 55) hit(s, t, .1, .3 + (k > 55 ? (k - 55) * .04 : 0), 1.2);
+    if (!k) hit(s, t, .9, .35, 2.4);
   }
 }
 
@@ -973,13 +1050,13 @@ function updateHud(s) {
   s.U.setText(mode);
   s.z.setText(`${downName} & ${goal ? 'GOAL' : toGo}`);
   s.Q.clear().fillStyle(C.gold).fillRect(s.a ? 200 : 24, 64, 68, 5);
-  if (!s.duo && s.a === 1) s.W.setText('P1 MOVE WASD   I HIT   K BANANA PEEL');
-  else if (!s.duo) s.W.setText('MOVE WASD   U PASS   O LONG   I JUKE   K PUSH');
-  else if (s.a === 0) s.W.setText('P1 WASD U-O PASS K PUSH   P2 ARROWS T HIT G PEEL');
-  else s.W.setText('P2 ARROWS R-Y PASS G PUSH   P1 WASD I HIT K PEEL');
+  if (!s.duo && s.a === 1) s.W.setText('DEFENSE: CATCH THE RUNNER  ·  I TACKLE  ·  K DROP A PEEL');
+  else if (!s.duo) s.W.setText('OFFENSE: RUN TO THE END ZONE  ·  U PASS  ·  I JUKE  ·  K PUSH');
+  else if (s.a === 0) s.W.setText('P1 ATTACKS: U PASS · K PUSH   P2 DEFENDS: T TACKLE · G PEEL');
+  else s.W.setText('P2 ATTACKS: R PASS · G PUSH   P1 DEFENDS: I TACKLE · K PEEL');
 }
 
-// Chase-camera projection. Field x is depth and `l` is the lateral position in field pixels.
+// Chase-camera projection. Field x is depth and `l` is the lateral ar in field pixels.
 // Returns [screenX, screenY, scale]; the camera never rolls, so equal depths share one screen row.
 function pv(s, u, m) {
   const k = FOC / Math.max(u - s.cx + BACK, 40);
@@ -1113,22 +1190,22 @@ function renderWorld(s, time) {
     let [sx, sy, k] = proj(s, p.x, p.y);
     const pair = s.G, carrierFall = pair && p === pair.carrier, tackleDive = pair && p === pair.tackler;
     const elapsed = pair ? time - pair.start : 0, impact = pair ? clp(Math.min(elapsed / 120, (650 - elapsed) / 180, 1), 0, 1) : 0;
-    const run = (s.c === 'playing' || s.c === 'celebrating') && p.moving ? sin(time / 55 + p.number * 2) : 0, hop = p.hop || 0;
+    const run = (s.c === 'playing' || s.c === 'celebrating') && p.ax ? sin(time / 55 + p.au * 2) : 0, hop = p.hop || 0;
     if (tackleDive) { [sx, sy, k] = proj(s, pair.carrier.x, pair.carrier.y); sy -= 16 * k; }
-    p.limbs[0].y = -Math.max(0, run) * 7; p.limbs[1].y = -Math.max(0, -run) * 7;
-    p.limbs[2].scaleY = 1 - run * .28; p.limbs[3].scaleY = 1 + run * .28;
-    // Dances (0 banana spin, 1 robot, 2 spike) and the stiff arm drive the arms; negative scale points an arm up.
+    p.aw[0].y = -Math.max(0, run) * 7; p.aw[1].y = -Math.max(0, -run) * 7;
+    p.aw[2].scaleY = 1 - run * .28; p.aw[3].scaleY = 1 + run * .28;
+    // Dances (0 av spin, 1 robot, 2 spike) and the stiff arm drive the arms; negative scale points an arm up.
     const d = p.dance, up = sin(time / 110) > 0;
-    if (d != null) { p.limbs[2].scaleY = d === 1 && up ? 1 : -1; p.limbs[3].scaleY = d === 1 ? (up ? -1 : 1) : d ? -1 : 1; }
-    if (time < (p.pushUntil || 0)) p.limbs[3].scaleY = -1.3;
+    if (d != null) { p.aw[2].scaleY = d === 1 && up ? 1 : -1; p.aw[3].scaleY = d === 1 ? (up ? -1 : 1) : d ? -1 : 1; }
+    if (time < (p.ae || 0)) p.aw[3].scaleY = -1.3;
     // Nearer players (smaller depth) must draw over farther ones.
     const fall = carrierFall ? impact : tackleDive ? clp(Math.min((elapsed - 65) / 120, (650 - elapsed) / 110, 1), 0, 1) : p.fall || 0, roll = carrierFall ? -1.5 : tackleDive ? 1.55 : 1.3;
     p.root.setPosition(sx, sy - hop * 18 * k).setScale(k * (1 + hop * .1), k * (1 - hop * .12) * (carrierFall || tackleDive ? 1 - fall * .68 : 1)).setRotation((p.lean || 0) * .1 + hop * .2 + fall * roll).setDepth(8 + k * .01 + (tackleDive ? .08 : 0)).setVisible(k < 2.6);
     if (d === 0) p.root.scaleX *= Math.cos(time / 110);
     const mine = p === h0 || (s.duo && p === h1);
     p.marks.forEach(m => m.setVisible(mine)); p.face.forEach(f => f.setVisible(p.team !== s.a)); p.nape.setVisible(p.team === s.a);
-    p.roleLabel.setPosition(sx, sy - 104 * k).setVisible(k < 2.6 && !mine);
-    p.controlLabel.setPosition(sx, sy - 136 * k).setVisible(mine && k < 2.6);
+    p.am.setPosition(sx, sy - 104 * k).setVisible(k < 2.6 && !mine);
+    p.ao.setPosition(sx, sy - 136 * k).setVisible(mine && k < 2.6);
   }
 }
 
@@ -1164,7 +1241,7 @@ function standPath(d) {
   return a.concat([[0, W + d]]);
 }
 
-// Row 0 is the low ad wall. Fans stand on each tread, one per PITCH along the path; their index is fixed by position
+// Row 0 is the low ad wall. Fans stand on each tread, one per PITCH along the path; their index is fixed by ar
 // along the row, so the colours never change as the camera moves.
 function buildStands(s) {
   const dd = STAND_W / ROWS;
@@ -1338,7 +1415,7 @@ function drawDrivePlate(g) {
 function makeBanana(s, x, y, scale, style = s.ball) {
   const [, curve, th, body, shade, hi, band, line, tl, tr, drone] = BALLS[style], ly = curve ? -1.5 : -2;
   const c = s.add.container(x, y).setScale(scale), g = s.add.graphics(), pt = i => { const e = sin(Math.PI * i / 12); return [(i / 12 - .5) * 58, -2 + curve * e, 3 + th * e ** .7]; };
-  // A strip between two fractions of the banana's thickness, as a polygon along the curved centre line.
+  // A strip between two fractions of the av's thickness, as a polygon along the curved centre line.
   const edge = (a, b) => [...Array(13).keys()].map(i => ({ x: pt(i)[0], y: pt(i)[1] + (a - .5) * pt(i)[2] })).concat([...Array(13).keys()].reverse().map(i => ({ x: pt(i)[0], y: pt(i)[1] + (b - .5) * pt(i)[2] })));
   if (drone) for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
     const ex = dx * 23, ey = -2 + dy * 15;
